@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "iCloud Cookie Bridge for Chrome",
+  "version": "1.2.0",
+  "description": "Send this Chrome profile's iCloud session cookies to its local mail dashboard.",
+  "minimum_chrome_version": "96",
+  "permissions": ["cookies", "alarms", "storage"],
+  "host_permissions": [
+    "https://*.icloud.com/*",
+    "https://*.icloud.com.cn/*",
+    "https://account.apple.com/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Sync iCloud cookies",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}
