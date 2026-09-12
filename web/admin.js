@@ -53,7 +53,7 @@ function updateRefreshLabel() {
 function scheduleRefresh() {
   clearInterval(refreshTimer); refreshTimer = null;
   const input = $('#auto-refresh'), interval = $('#refresh-interval');
-  if (input?.checked && !$('#workspace')?.hidden) refreshTimer = setInterval(() => { if (!document.hidden && !$('#dialog')?.open) void refresh(); }, Number(interval?.value || 30) * 1000);
+  if (input?.checked && !$('#workspace')?.hidden) refreshTimer = setInterval(() => { if (!document.hidden && !$('#dialog')?.open && !$('#workspace')?.hidden) void refresh(); }, Number(interval?.value || 30) * 1000);
 }
 function saveRefreshSettings() {
   const input = $('#auto-refresh'), interval = $('#refresh-interval'); if (!input || !interval) return;
