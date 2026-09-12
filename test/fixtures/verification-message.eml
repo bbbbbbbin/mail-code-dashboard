@@ -1,0 +1,25 @@
+From: Synthetic Sender <sender@example.test>
+To: Forwarding Inbox <forwarding@example.test>
+Delivered-To: alias1@icloud.com
+Subject: Synthetic verification code 123456
+Date: Fri, 25 Jul 2026 10:00:00 +0000
+Message-ID: <synthetic-verification@example.test>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="synthetic-boundary"
+
+--synthetic-boundary
+Content-Type: text/plain; charset="utf-8"
+
+Use code 123456 to verify the synthetic account.
+Verify: https://accounts.example.test/verify?token=abc
+
+--synthetic-boundary
+Content-Type: text/html; charset="utf-8"
+
+<html><body>
+  <p>Use code <strong>123456</strong> to verify the synthetic account.</p>
+  <a class="button" href="https://accounts.example.test/verify?token=abc">Verify account</a>
+  <a href="https://accounts.example.test/privacy">Privacy</a>
+</body></html>
+
+--synthetic-boundary--

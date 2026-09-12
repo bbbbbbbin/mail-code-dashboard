@@ -1,0 +1,9 @@
+From: Synthetic Sender <sender@example.test>
+To: Forwarding Inbox <forwarding@example.test>
+X-Original-To: alias1@icloud.com
+Subject: Similar address boundary fixture
+Date: Fri, 25 Jul 2026 10:01:00 +0000
+Message-ID: <synthetic-similar@example.test>
+Content-Type: text/plain; charset="utf-8"
+
+This synthetic message is for alias1@icloud.com, not a partial address match.

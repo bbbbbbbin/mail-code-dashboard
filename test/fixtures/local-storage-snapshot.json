@@ -1,0 +1,47 @@
+[
+  {
+    "email": "unused.alias@icloud.com",
+    "group": "unused",
+    "source": "icloud-hme",
+    "label": "hme-003",
+    "remark": "available",
+    "unread": false,
+    "code": "",
+    "subject": "",
+    "preview": "",
+    "receivedAt": "",
+    "statusType": "ok",
+    "statusMessage": "ready",
+    "lastCheckedAt": "2026-07-24T08:00:00.000Z"
+  },
+  {
+    "email": "used.alias@icloud.com",
+    "group": "finished",
+    "source": "icloud-hme",
+    "label": "hme-001",
+    "remark": "do not reuse",
+    "unread": true,
+    "code": "123456",
+    "subject": "Synthetic verification",
+    "preview": "Synthetic preview without message content",
+    "receivedAt": "2026-07-24T09:00:00.000Z",
+    "statusType": "ok",
+    "statusMessage": "checked",
+    "lastCheckedAt": "2026-07-24T09:01:00.000Z"
+  },
+  {
+    "email": "trash.alias@icloud.com",
+    "group": "trash",
+    "source": "icloud-hme",
+    "label": "hme-002",
+    "remark": "discarded",
+    "unread": false,
+    "code": "",
+    "subject": "",
+    "preview": "",
+    "receivedAt": "",
+    "statusType": "error",
+    "statusMessage": "disabled",
+    "lastCheckedAt": "2026-07-24T07:00:00.000Z"
+  }
+]
