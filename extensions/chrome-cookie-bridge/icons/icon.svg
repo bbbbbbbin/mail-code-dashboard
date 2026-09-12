@@ -1,0 +1,7 @@
+<!-- 占位图标的源形状。Chromium 的 manifest icons 不认 SVG，运行时用的是
+     scripts/generate_icons.mjs 从同一组坐标栅格化出来的 icon-*.png。 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect x="0" y="0" width="100" height="100" rx="22" ry="22" fill="#0bbf72" />
+  <path d="M20 33 H80 V67 H20 Z" fill="#ffffff" />
+  <path d="M20 33 H80 L50 57 Z" fill="#0bbf72" />
+</svg>
