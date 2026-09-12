@@ -238,3 +238,13 @@ test('HME endpoints are discovered per account and reject non-Apple or cross-reg
   const cloud = new AccountICloud({ getAccount: async () => ({ identity, cookieHeader: 'synthetic', region: 'global' }), fetchImpl: async url => { requested = url; return { ok: true, json: async () => ({ success: true, result: { hmeEmails: [] } }) }; } });
   await cloud.list(); assert.equal(new URL(requested).hostname, 'p42-maildomainws.icloud.com');
 });
+
+test('a missing hosted inventory fails closed and never silently creates replacement mailboxes', async t => {
+  const f = await fixture(t), target = join(f.dataDir, 'accounts', f.a.id, 'dashboard-state-v1.json');
+  await rm(target);
+  const rows = await f.platform.inventory(f.a.id);
+  assert.equal(rows[0].error, 'ACCOUNT_STORAGE_UNAVAILABLE');
+  await assert.rejects(f.platform.runtime(f.a.id).store.createInventoryItems([{ email: 'replacement@icloud.com' }]));
+  await assert.rejects(readFile(target), { code: 'ENOENT' });
+  assert.equal((await f.platform.inventory(f.b.id))[0].inventory.length, 1);
+});
