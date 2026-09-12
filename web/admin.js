@@ -1,5 +1,6 @@
 import { $, api, element as el, displayMail } from './shared.js';
-let csrf = '', accounts = [], view = 'inventory', selected = new Map(), dialogAction;
+let csrf = '', accounts = [], view = 'inventory', selected = new Map(), dialogAction, refreshTimer = null;
+const REFRESH_KEY = 'mail-dashboard-admin-auto-refresh';
 const write = (path, data = {}, method = 'POST') => api(path, { method, data, csrf });
 const accountName = id => accounts.find(a => a.id === id)?.name || id;
 const rowKey = r => `${r.accountId}:${r.id}`;
@@ -34,7 +35,30 @@ async function refresh() {
     const rows = accounts.flatMap(a => a.inventory);
     $('#stats').replaceChildren(...[[accounts.length, 'iCloud 账号'], [rows.length, '邮箱总数'], [rows.filter(r => r.distribution.status === 'active').length, '永久分发'], [rows.filter(r => r.distribution.status === 'unassigned').length, '未分发']].map(([n, label]) => { const c = el('div', undefined, 'card stat'); c.append(el('strong', n), el('span', label)); return c; }));
     await render();
+    updateRefreshLabel(); scheduleRefresh();
   } catch (e) { $('#notice').textContent = e.message; if (e.status === 401) { $('#login').hidden = false; $('#workspace').hidden = true; $('#content').replaceChildren(); } }
+}
+function refreshSettings() {
+  const input = $('#auto-refresh'), interval = $('#refresh-interval');
+  if (!input || !interval) return;
+  let enabled = false, seconds = '30';
+  try { enabled = localStorage.getItem(REFRESH_KEY) === 'on'; seconds = localStorage.getItem(`${REFRESH_KEY}-interval`) || seconds; } catch {}
+  input.checked = enabled; interval.value = ['30', '60', '300'].includes(seconds) ? seconds : '30'; interval.disabled = !enabled; updateRefreshLabel();
+}
+function updateRefreshLabel() {
+  const input = $('#auto-refresh'), interval = $('#refresh-interval'), label = $('#refresh-state'); if (!input || !label) return;
+  label.textContent = input.checked ? `每 ${interval.value === '60' ? '1 分钟' : interval.value === '300' ? '5 分钟' : '30 秒'} · 自动同步` : '已关闭 · 手动刷新';
+  const dot = document.querySelector('.sync-control:not(.compact) .sync-dot'); if (dot) dot.classList.toggle('is-on', input.checked);
+}
+function scheduleRefresh() {
+  clearInterval(refreshTimer); refreshTimer = null;
+  const input = $('#auto-refresh'), interval = $('#refresh-interval');
+  if (input?.checked && !$('#workspace')?.hidden) refreshTimer = setInterval(() => { if (!document.hidden && !$('#dialog')?.open) void refresh(); }, Number(interval?.value || 30) * 1000);
+}
+function saveRefreshSettings() {
+  const input = $('#auto-refresh'), interval = $('#refresh-interval'); if (!input || !interval) return;
+  try { localStorage.setItem(REFRESH_KEY, input.checked ? 'on' : 'off'); localStorage.setItem(`${REFRESH_KEY}-interval`, interval.value); } catch {}
+  interval.disabled = !input.checked; updateRefreshLabel(); scheduleRefresh();
 }
 function table(headers, rows) { const wrap = el('div', undefined, 'table-wrap card'), t = el('table'), head = el('thead'), hr = el('tr'); headers.forEach(h => hr.append(el('th', h))); head.append(hr); t.append(head); const body = el('tbody'); rows.forEach(cells => { const row = el('tr'); cells.forEach(v => { const cell = el('td'); cell.append(v instanceof Node ? v : document.createTextNode(String(v ?? ''))); row.append(cell); }); body.append(row); }); t.append(body); wrap.append(t); if (!rows.length) wrap.append(el('p', '暂无记录', 'empty')); return wrap; }
 function actions(...items) { const box = el('div', undefined, 'actions'); box.append(...items); return box; }
@@ -91,6 +115,8 @@ function auto(a) { const enabled = field('开启后台自动生成', 'enabled', 
 function manualCookie(a) { const cookies = el('textarea'); cookies.name = 'cookies'; cookies.rows = 7; cookies.required = true; cookies.placeholder = '[{"name":"X-APPLE-…","value":"…"}]'; openDialog(`手动同步至 ${a.name}`, [el('p', '使用此账号的同步密钥；服务器仍会核验 Apple 身份。不要粘贴其他账号的 Cookie。'), field('此账号同步密钥', 'token', 'password'), cookies], async b => { const r = await fetch('/bridge/v1/sync', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${b.token}` }, body: JSON.stringify({ expectedAccountId: a.id, cookies: JSON.parse(b.cookies) }) }); const result = await r.json(); if (!r.ok) throw new Error(`同步未完成：${result.error}`); if (result.account.id !== a.id) throw new Error('密钥属于其他账号；请核对绑定。'); }); }
 $('#login-form').onsubmit = async e => { e.preventDefault(); const f = e.currentTarget, b = f.querySelector('button'); b.disabled = true; try { await api('/admin-api/login', { method: 'POST', data: Object.fromEntries(new FormData(f)) }); f.reset(); $('#notice').textContent = ''; await refresh(); } catch(e) { $('#notice').textContent = e.message; } finally { b.disabled = false; } };
 $('#refresh').onclick = refresh;
+$('#auto-refresh').onchange = saveRefreshSettings;
+$('#refresh-interval').onchange = saveRefreshSettings;
 $('#scan-mail').onclick = async () => {
   const b = $('#scan-mail'); b.disabled = true;
   try { const r = await write('/admin-api/scan-mail'); $('#notice').textContent = r.results.some(x => x.error) ? '部分账号扫描失败，请查看各账号状态。' : '收件扫描完成。'; await refresh(); }
@@ -101,5 +127,5 @@ $('#add-account').onclick = () => { const region = el('label', 'iCloud 区域'),
 $('#distribute-selected').onclick = () => { try { distribute([...selected.values()]); } catch(e) { $('#notice').textContent = e.message; } };
 for (const button of document.querySelectorAll('[data-view]')) button.onclick = async () => { view = button.dataset.view; $('#heading').textContent = button.textContent; document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b === button)); try { await render(); } catch(e) { $('#notice').textContent = e.message; } };
 for (const id of ['#account-filter', '#search', '#status-filter']) $(id).addEventListener('input', () => { void render().catch(e => { $('#notice').textContent = e.message; }); });
-setInterval(() => { if (!document.hidden && !$('#workspace').hidden && !$('#dialog').open) void refresh(); }, 30000);
+refreshSettings();
 void refresh();
