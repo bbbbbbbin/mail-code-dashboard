@@ -1,5 +1,5 @@
-import { $, api, element as el, displayMail } from './shared.js';
-let csrf = '', accounts = [], view = 'inventory', selected = new Map(), dialogAction, refreshTimer = null;
+import { $, api, copyButton, element as el, displayMail } from './shared.js';
+let csrf = '', accounts = [], view = 'inventory', selected = new Map(), dialogAction, refreshTimer = null, busy = false;
 const REFRESH_KEY = 'mail-dashboard-admin-auto-refresh';
 const write = (path, data = {}, method = 'POST') => api(path, { method, data, csrf });
 const accountName = id => accounts.find(a => a.id === id)?.name || id;
@@ -7,7 +7,9 @@ const rowKey = r => `${r.accountId}:${r.id}`;
 const accountTone = id => `tone-${Math.max(0, accounts.findIndex(a => a.id === id)) % 5}`;
 const date = v => v ? new Date(v).toLocaleString() : '—';
 const stateName = s => ({ unassigned: '未分发', active: '已分发 · 永久', revoked: '已撤销' })[s] || s;
-function button(text, action, cls = '') { const b = el('button', text, cls); b.type = 'button'; b.onclick = async () => { b.disabled = true; try { await action(); } catch(e) { $('#notice').textContent = e.message; } finally { b.disabled = false; } }; return b; }
+function setBusy(value) { busy = value; document.body.classList.toggle('is-busy', value); const layer = $('#busy-layer'); if (layer) layer.hidden = !value; }
+async function runAction(action) { if (busy) return; setBusy(true); try { return await action(); } finally { setBusy(false); } }
+function button(text, action, cls = '') { const b = el('button', text, cls); b.type = 'button'; b.onclick = async () => { if (busy) return; b.disabled = true; setBusy(true); try { const result = action(); if (result?.then) await result; } catch(e) { $('#notice').textContent = e.message; } finally { b.disabled = false; setBusy(false); } }; return b; }
 function field(label, name, type = 'text', value = '', required = true) { const l = el('label', label), input = el('input'); Object.assign(input, { name, type, value, required }); if (type === 'password') input.autocomplete = 'new-password'; l.append(input); return l; }
 function openDialog(title, nodes, action) { $('#dialog-title').textContent = title; $('#dialog-body').replaceChildren(...nodes); $('#dialog-error').textContent = ''; $('#dialog-submit').hidden = !action; dialogAction = action; $('#dialog').showModal(); }
 function secretDialog(title, data) {
@@ -19,8 +21,9 @@ $('#dialog-close').onclick = () => $('#dialog').close();
 $('#dialog').addEventListener('close', () => { if (!$('#dialog').open) { $('#dialog-body').replaceChildren(); dialogAction = null; } });
 $('#dialog-form').onsubmit = async e => {
   e.preventDefault(); const data = Object.fromEntries(new FormData(e.currentTarget)); const action = dialogAction;
+  if (busy) return;
   $('#dialog-submit').disabled = true;
-  try { const after = await action?.(data); $('#dialog').close(); await refresh(); if (typeof after === 'function') after(); }
+  try { const after = await runAction(() => action?.(data)); $('#dialog').close(); await refresh(); if (typeof after === 'function') after(); }
   catch (e) { $('#dialog-error').textContent = e.message; }
   finally { $('#dialog-submit').disabled = false; }
 };
@@ -75,7 +78,7 @@ async function render() {
     content.append(table(['选择', '邮箱 / 标签', '所属账号', '分发状态', '分发对象', '邮件', '操作'], rows.map(r => {
       const key = rowKey(r);
       const input = el('input'); input.type = 'checkbox'; input.setAttribute('aria-label', `选择 ${r.email}`); input.disabled = r.distribution.status !== 'unassigned'; input.checked = selected.has(key); input.onchange = () => input.checked ? selected.set(key, r) : selected.delete(key);
-      const mailbox = el('div'); mailbox.append(el('strong', r.email), el('small', r.label || '无标签', 'muted'));
+      const mailbox = el('div', undefined, 'mailbox-cell'); const emailLine = el('div', undefined, 'email-line'); emailLine.append(el('strong', r.email), copyButton(r.email)); mailbox.append(emailLine, el('small', r.label || '无标签', 'muted'));
       const account = el('span', r.account.name, `badge ${accountTone(r.accountId)}`);
       return [input, mailbox, account, stateName(r.distribution.status), r.distribution.recipient || '—', r.unread ? '未读' : r.receivedAt ? date(r.receivedAt) : '—', actions(button('查看邮件', async () => { const data = await api(`/admin-api/accounts/${r.accountId}/emails/${r.id}/messages`); const box = el('div'); displayMail(data.messages, box); openDialog(r.email, [box]); }), ...(r.distribution.status === 'unassigned' ? [button('分发', () => distribute([r]))] : [grantActions(r.distribution)]))];
     })));
@@ -113,19 +116,20 @@ function createKey(a, kind) { openDialog(kind === 'upload' ? '创建账号专属
 function forward(a) { openDialog(`配置 ${a.name} 的转发收件`, [el('p', '此处填写接收 iCloud 转发邮件的 IMAP 邮箱与应用授权码，非 Apple 登录密码。已有密码留空保持不变；更换主机或邮箱时需填写新授权码。', 'muted'), field('IMAP 主机', 'host', 'text', a.forwardSettings?.host || 'imap.qq.com'), field('TLS 端口', 'port', 'number', String(a.forwardSettings?.port || 993)), field('转发邮箱地址', 'email', 'email', a.forwardSettings?.email || ''), field('应用授权码', 'password', 'password', '', !a.forwardConfigured)], async b => { await write(`/admin-api/accounts/${a.id}`, { forward: { ...b, port: Number(b.port), secure: true } }, 'PATCH'); }); }
 function auto(a) { const enabled = field('开启后台自动生成', 'enabled', 'checkbox', '', false); enabled.querySelector('input').checked = !!a.autoStock?.enabled; openDialog(`${a.name} · 后台生成`, [field('标签前缀', 'prefix', 'text', a.autoStock?.prefix || 'hme'), enabled, el('p', '每小时一批、每批最多 5 个。关闭页面后继续运行；结果不确定时暂停，先同步核对再恢复。', 'muted')], async b => { await write(`/admin-api/accounts/${a.id}/auto-stock`, { prefix: b.prefix, enabled: b.enabled !== undefined }, 'PATCH'); }); }
 function manualCookie(a) { const cookies = el('textarea'); cookies.name = 'cookies'; cookies.rows = 7; cookies.required = true; cookies.placeholder = '[{"name":"X-APPLE-…","value":"…"}]'; openDialog(`手动同步至 ${a.name}`, [el('p', '使用此账号的同步密钥；服务器仍会核验 Apple 身份。不要粘贴其他账号的 Cookie。'), field('此账号同步密钥', 'token', 'password'), cookies], async b => { const r = await fetch('/bridge/v1/sync', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${b.token}` }, body: JSON.stringify({ expectedAccountId: a.id, cookies: JSON.parse(b.cookies) }) }); const result = await r.json(); if (!r.ok) throw new Error(`同步未完成：${result.error}`); if (result.account.id !== a.id) throw new Error('密钥属于其他账号；请核对绑定。'); }); }
-$('#login-form').onsubmit = async e => { e.preventDefault(); const f = e.currentTarget, b = f.querySelector('button'); b.disabled = true; try { await api('/admin-api/login', { method: 'POST', data: Object.fromEntries(new FormData(f)) }); f.reset(); $('#notice').textContent = ''; await refresh(); } catch(e) { $('#notice').textContent = e.message; } finally { b.disabled = false; } };
-$('#refresh').onclick = refresh;
+$('#login-form').onsubmit = async e => { e.preventDefault(); if (busy) return; const f = e.currentTarget, b = f.querySelector('button'); b.disabled = true; try { await runAction(async () => { await api('/admin-api/login', { method: 'POST', data: Object.fromEntries(new FormData(f)) }); f.reset(); $('#notice').textContent = ''; await refresh(); }); } catch(e) { $('#notice').textContent = e.message; } finally { b.disabled = false; } };
+$('#refresh').onclick = () => runAction(refresh);
 $('#auto-refresh').onchange = saveRefreshSettings;
 $('#refresh-interval').onchange = saveRefreshSettings;
 $('#scan-mail').onclick = async () => {
+  if (busy) return;
   const b = $('#scan-mail'); b.disabled = true;
-  try { const r = await write('/admin-api/scan-mail'); $('#notice').textContent = r.results.some(x => x.error) ? '部分账号扫描失败，请查看各账号状态。' : '收件扫描完成。'; await refresh(); }
-  catch(e) { $('#notice').textContent = e.message; } finally { b.disabled = false; }
+  try { await runAction(async () => { const r = await write('/admin-api/scan-mail'); $('#notice').textContent = r.results.some(x => x.error) ? '部分账号扫描失败，请查看各账号状态。' : '收件扫描完成。'; await refresh(); }); }
+  catch(e) { $('#notice').textContent = e.message; } finally { b.disabled = false; setBusy(false); }
 };
-$('#logout').onclick = async () => { try { await write('/admin-api/logout'); location.reload(); } catch(e) { $('#notice').textContent = e.message; } };
+$('#logout').onclick = async () => { if (busy) return; try { await runAction(async () => { await write('/admin-api/logout'); location.reload(); }); } catch(e) { $('#notice').textContent = e.message; } };
 $('#add-account').onclick = () => { const region = el('label', 'iCloud 区域'), select = el('select'); select.name = 'region'; select.append(new Option('全球 icloud.com', 'global'), new Option('中国大陆 icloud.com.cn', 'china')); region.append(select); openDialog('新增独立 iCloud 账号', [field('账号名称', 'name'), field('预期 Apple 登录邮箱（用于防串号核验）', 'appleId', 'email'), region], async b => { await write('/admin-api/accounts', b); }); };
 $('#distribute-selected').onclick = () => { try { distribute([...selected.values()]); } catch(e) { $('#notice').textContent = e.message; } };
-for (const button of document.querySelectorAll('[data-view]')) button.onclick = async () => { view = button.dataset.view; $('#heading').textContent = button.textContent; document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b === button)); try { await render(); } catch(e) { $('#notice').textContent = e.message; } };
+for (const button of document.querySelectorAll('[data-view]')) button.onclick = async () => { if (busy) return; view = button.dataset.view; $('#heading').textContent = button.textContent; document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b === button)); try { await runAction(render); } catch(e) { $('#notice').textContent = e.message; } };
 for (const id of ['#account-filter', '#search', '#status-filter']) $(id).addEventListener('input', () => { void render().catch(e => { $('#notice').textContent = e.message; }); });
 refreshSettings();
 void refresh();

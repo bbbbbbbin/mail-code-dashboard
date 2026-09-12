@@ -1,12 +1,14 @@
-import { $, api, displayMail } from './shared.js';
-let loading = false, refreshTimer = null;
+import { $, api, copyButton, displayMail, element as el } from './shared.js';
+let loading = false, refreshTimer = null, busy = false;
+function setBusy(value) { busy = value; document.body.classList.toggle('is-busy', value); const layer = $('#busy-layer'); if (layer) layer.hidden = !value; }
+async function runAction(action) { if (busy) return; setBusy(true); try { return await action(); } finally { setBusy(false); } }
 const REFRESH_KEY = 'mail-dashboard-inbox-auto-refresh';
 async function refresh() {
   if (loading) return; loading = true;
   try {
     const data = await api('/mail-api/messages');
     $('#login-form').hidden = true; $('#mailbox').hidden = false; $('#logout').hidden = false;
-    $('#mailbox-name').textContent = data.email;
+    $('#mailbox-name').replaceChildren(el('strong', data.email), copyButton(data.email));
     displayMail(data.messages, $('#messages')); $('#notice').textContent = `已更新 ${new Date().toLocaleTimeString()}`; updateRefreshLabel(); scheduleRefresh();
   } catch (e) {
     $('#notice').textContent = e.message;
@@ -30,7 +32,7 @@ function updateRefreshLabel() {
 function scheduleRefresh() {
   clearInterval(refreshTimer); refreshTimer = null;
   const input = $('#auto-refresh'), interval = $('#refresh-interval');
-  if (input?.checked && !$('#mailbox')?.hidden) refreshTimer = setInterval(() => { if (!document.hidden && !$('#login-form')?.hidden) return; if (!document.hidden) void refresh(); }, Number(interval?.value || 30) * 1000);
+  if (input?.checked && !$('#mailbox')?.hidden) refreshTimer = setInterval(() => { if (busy || document.hidden || $('#mailbox')?.hidden) return; void refresh(); }, Number(interval?.value || 30) * 1000);
 }
 function saveRefreshSettings() {
   const input = $('#auto-refresh'), interval = $('#refresh-interval'); if (!input || !interval) return;
@@ -38,13 +40,13 @@ function saveRefreshSettings() {
   interval.disabled = !input.checked; updateRefreshLabel(); scheduleRefresh();
 }
 $('#login-form').addEventListener('submit', async e => {
-  e.preventDefault(); const form = e.currentTarget, button = form.querySelector('button'); button.disabled = true;
-  try { await api('/mail-api/login', { method: 'POST', data: { token: form.elements.token.value.trim() } }); form.reset(); await refresh(); }
+  e.preventDefault(); if (busy) return; const form = e.currentTarget, button = form.querySelector('button'); button.disabled = true;
+  try { await runAction(async () => { await api('/mail-api/login', { method: 'POST', data: { token: form.elements.token.value.trim() } }); form.reset(); await refresh(); }); }
   catch (e) { $('#notice').textContent = e.message; } finally { button.disabled = false; }
 });
-$('#refresh').onclick = refresh;
+$('#refresh').onclick = () => { if (!busy) void runAction(refresh); };
 $('#auto-refresh').onchange = saveRefreshSettings;
 $('#refresh-interval').onchange = saveRefreshSettings;
-$('#logout').onclick = async () => { try { await api('/mail-api/logout', { method: 'POST', data: {} }); location.reload(); } catch (e) { $('#notice').textContent = e.message; } };
+$('#logout').onclick = async () => { if (busy) return; try { await runAction(async () => { await api('/mail-api/logout', { method: 'POST', data: {} }); location.reload(); }); } catch (e) { $('#notice').textContent = e.message; } };
 refreshSettings();
 void refresh();
