@@ -8,7 +8,7 @@ async function refresh() {
   try {
     const data = await api('/mail-api/messages');
     $('#login-form').hidden = true; $('#mailbox').hidden = false; $('#logout').hidden = false;
-    $('#mailbox-name').replaceChildren(el('strong', data.email), copyButton(data.email));
+    const mailboxName = $('#mailbox-name'); mailboxName.classList.add('mailbox-identity'); mailboxName.replaceChildren(el('strong', data.email), copyButton(data.email));
     displayMail(data.messages, $('#messages')); $('#notice').textContent = `已更新 ${new Date().toLocaleTimeString()}`; updateRefreshLabel(); scheduleRefresh();
   } catch (e) {
     $('#notice').textContent = e.message;
