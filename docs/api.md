@@ -1,15 +1,17 @@
 # Mail Code Dashboard API
 
+本文描述单机模式 API。服务器模式的权限与接口见 [服务器部署指南](server-deployment.md)。`PORT` 为服务配置的监听端口。
+
 基础地址：
 
 ```text
-http://127.0.0.1:4173
+http://127.0.0.1:PORT
 ```
 
 所有 `/v1/*` 请求必须携带：
 
 ```http
-X-API-Key: <local-secret>
+X-API-Key: TOKEN
 ```
 
 成功和失败都使用固定信封：
@@ -83,7 +85,7 @@ X-API-Key: <local-secret>
 Apple 标签是唯一权威值。新地址的 `label` 与 `appleLabel` 保存同一个官方标签；已存在地址收到 `appleLabel` 或非空 `label` 时会同时刷新这两个兼容字段。分组、备注、领取状态和邮件状态不会被覆盖。
 
 ```bash
-curl -X POST http://127.0.0.1:4173/v1/inventory \
+curl -X POST http://127.0.0.1:PORT/v1/inventory \
   -H "X-API-Key: $MAIL_DASHBOARD_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"addresses":[{"email":"synthetic.alias@icloud.com","label":"hme-001"}]}'
@@ -142,7 +144,7 @@ curl -X POST http://127.0.0.1:4173/v1/inventory \
 把一条**垃圾箱**里的地址从库存永久移除，返回 `{ deleted, summary, inventory, claims }`：
 
 ```bash
-curl -X DELETE http://127.0.0.1:4173/v1/inventory/$ID \
+curl -X DELETE http://127.0.0.1:PORT/v1/inventory/$ID \
   -H "X-API-Key: $MAIL_DASHBOARD_API_KEY"
 ```
 
@@ -178,7 +180,7 @@ curl -X DELETE http://127.0.0.1:4173/v1/inventory/$ID \
 批量扫描 `unused` 组中仍启用（`isActive`）的地址，命中邮件的行移入 `finished`：
 
 ```bash
-curl -X POST http://127.0.0.1:4173/v1/inventory/check-unused-mail \
+curl -X POST http://127.0.0.1:PORT/v1/inventory/check-unused-mail \
   -H "X-API-Key: $MAIL_DASHBOARD_API_KEY"
 ```
 
@@ -207,7 +209,7 @@ $headers = @{
 }
 Invoke-RestMethod `
   -Method Post `
-  -Uri "http://127.0.0.1:4173/v1/claims" `
+  -Uri "http://127.0.0.1:PORT/v1/claims" `
   -Headers $headers
 ```
 
@@ -216,7 +218,7 @@ Invoke-RestMethod `
 curl：
 
 ```bash
-curl -X POST http://127.0.0.1:4173/v1/claims \
+curl -X POST http://127.0.0.1:PORT/v1/claims \
   -H "X-API-Key: $MAIL_DASHBOARD_API_KEY" \
   -H "Idempotency-Key: synthetic-job-001"
 ```

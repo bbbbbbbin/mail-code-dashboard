@@ -1,9 +1,4 @@
-# 4173 邮箱服务 · 设计系统 v1
-
-## 为什么需要它
-
-
-所以这一版做的不是「换一套新观感」，而是把既有观感抽出来、给它规则和守卫。已上线的收件台外观不变。
+# Mail Code Dashboard · 设计系统 v1
 
 ## 交付物
 
@@ -144,22 +139,9 @@
 
 `test/server-security.test.mjs` 另外验证设计系统、Dashboard CSS 与五个浏览器模块均在精确静态白名单内、Content-Type 正确，且 `/assets/../server.mjs` 一类穿越仍是 404。`test/test_browser_smoke_support.py` 会真正启动烟测静态服务器，证明它与生产白名单、MIME、`no-store` 和安全响应头一致。
 
-## 已完成的收件台迁移
+## 页面集成
 
 - `mail-code-dashboard.html` 依次加载 `design-system.css` 与 `dashboard.css`，不再包含内联 `<style>`。
 - `dashboard.css` 只保留邮箱行、领取记录、迁移卡、邮件预览和局部响应式布局；按钮、面板、列表、统计、对话框等通用规则全部来自设计系统。
 - 库存网格在 `.inventory-panel` 上定义 `--grid-cols`、`--grid-cols-md` 与 `--grid-cols-sm`，桌面、1100px 和 640px 三档均由同一组共享列表规则计算。
 - `.message-*`、`.claim-*`、`.migration-*` 与 `.mail-html-frame` 是单页业务样式，故意留在 `dashboard.css`，不放大通用层。
-
-## 验证记录
-
-`/design-system.html` 在 1366×768、1100×768、640×768 三档视口 + 明暗两种主题下：
-
-- 横向溢出 0；
-- 行高实测 52px；
-- `.list-head` 与 `.row` 的 `grid-template-columns` 计算值完全相同；
-- 1100px 下 `.hide-md` 列消失、切到 4 列；640px 下表头隐藏、统计条降为 2 列、顶栏状态位隐藏；
-- 对话框打开后焦点在对话框内部；
-- 行内菜单在页面底部锚点上仍完整留在视口内；
-- 主题切换后刷新保持，分段控件 `aria-pressed` 同步；
-- 控制台无错误。
