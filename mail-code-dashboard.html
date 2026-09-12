@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <title>iCloud 隐藏邮箱收件台</title>
+  <link rel="stylesheet" href="/assets/design-system.css" />
+  <link rel="stylesheet" href="/assets/dashboard.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主内容</a>
+
+  <header class="appbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">M</span>
+      <h1>iCloud 隐藏邮箱收件台</h1>
+    </div>
+
+    <p class="appbar-status" id="pollStatus" role="status">
+      <span class="status-dot" id="pollStatusDot" data-state="idle"></span>
+      <span id="pollStatusText">监听中：转发邮箱</span>
+    </p>
+
+    <nav class="appbar-actions" aria-label="全局操作">
+      <button
+        class="btn btn-ghost btn-icon"
+        id="themeToggle"
+        type="button"
+        aria-label="切换主题"
+        title="切换主题"
+      >
+        <span id="themeIcon" aria-hidden="true">◐</span>
+      </button>
+      <button class="btn btn-outline" id="settingsBtn" type="button">设置</button>
+    </nav>
+  </header>
+
+  <main class="app-main" id="main">
+    <section class="stats" aria-label="库存统计">
+      <div class="stat">
+        <span class="stat-label">全部邮箱</span>
+        <strong class="stat-value" id="totalCount">0</strong>
+      </div>
+      <div class="stat">
+        <span class="stat-label">已使用</span>
+        <strong class="stat-value" id="finishedCount">0</strong>
+      </div>
+      <div class="stat">
+        <span class="stat-label">未使用</span>
+        <strong class="stat-value" id="unusedCount">0</strong>
+      </div>
+      <div class="stat">
+        <span class="stat-label">垃圾箱</span>
+        <strong class="stat-value" id="trashCount">0</strong>
+      </div>
+      <div class="stat" data-tone="brand">
+        <span class="stat-label">未读验证码</span>
+        <strong class="stat-value" id="newCodeCount">0</strong>
+      </div>
+    </section>
+
+    <section class="panel migration" id="migrationCard" hidden>
+      <div>
+        <h2>迁移浏览器中的邮箱状态</h2>
+        <p class="hint">
+          服务端库存尚未初始化。请核对汇总后显式确认；原浏览器数据会保留为只读回滚副本。
+        </p>
+      </div>
+      <div class="migration-counts" aria-label="迁移摘要">
+        <div class="migration-count"><span>总数</span><strong id="migrationTotal">0</strong></div>
+        <div class="migration-count"><span>未使用</span><strong id="migrationUnused">0</strong></div>
+        <div class="migration-count"><span>已使用</span><strong id="migrationFinished">0</strong></div>
+        <div class="migration-count"><span>垃圾箱</span><strong id="migrationTrash">0</strong></div>
+      </div>
+      <p class="inline-error" id="migrationError" role="alert"></p>
+      <div>
+        <button class="btn btn-primary" id="confirmMigrationBtn" type="button">
+          确认迁移到服务端
+        </button>
+      </div>
+    </section>
+
+    <section class="panel inventory-panel">
+      <div class="toolbar">
+        <div class="search">
+          <label class="visually-hidden" for="search">搜索邮箱</label>
+          <input id="search" type="search" placeholder="搜索邮箱或标签…" autocomplete="off" />
+          <button class="search-clear" id="clearSearchBtn" type="button" aria-label="清除搜索" hidden>
+            ×
+          </button>
+        </div>
+        <span class="search-result" id="searchResult">显示全部邮箱</span>
+
+        <span class="toolbar-spacer"></span>
+
+        <div class="toolbar-group">
+          <button class="btn btn-primary" id="generateIcloudBtn" type="button">
+            生成隐藏邮箱
+          </button>
+          <button class="btn btn-outline" id="syncIcloudBtn" type="button">同步 iCloud</button>
+          <button class="btn btn-outline" id="refreshForwardBtn" type="button">
+            读取已使用
+          </button>
+          <button class="btn btn-outline" id="scanUnusedMailBtn" type="button">
+            扫描未使用
+          </button>
+
+          <div class="menu-wrap">
+            <button
+              class="btn btn-outline btn-icon"
+              id="moreActionsBtn"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-label="更多操作"
+            >
+              ⋯
+            </button>
+            <div class="menu" id="moreActionsMenu" role="menu" aria-labelledby="moreActionsBtn">
+              <button type="button" role="menuitem" id="exportBtn">导出全部</button>
+              <button type="button" role="menuitem" id="exportFinishedBtn">导出已使用</button>
+              <button type="button" role="menuitem" id="exportUnusedBtn">导出未使用</button>
+              <div class="menu-sep"></div>
+              <button type="button" role="menuitem" id="markAllReadBtn">一键清未读</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress" id="batchProgress" hidden>
+        <div class="progress-bar"></div>
+      </div>
+
+      <div class="tabs" id="groupTabs" role="tablist" aria-label="邮箱分组">
+        <button class="tab" type="button" role="tab" data-group="all" aria-selected="true">
+          全部<span class="tab-count" data-count="all">0</span>
+        </button>
+        <button class="tab" type="button" role="tab" data-group="finished" aria-selected="false">
+          已使用<span class="tab-count" data-count="finished">0</span>
+        </button>
+        <button class="tab" type="button" role="tab" data-group="unused" aria-selected="false">
+          未使用<span class="tab-count" data-count="unused">0</span>
+        </button>
+        <button class="tab" type="button" role="tab" data-group="trash" aria-selected="false">
+          垃圾箱<span class="tab-count" data-count="trash">0</span>
+        </button>
+      </div>
+
+      <div class="list-head" aria-hidden="true">
+        <span>邮箱</span>
+        <span>备注</span>
+        <span>最近邮件</span>
+        <span>验证码</span>
+        <span class="col-group">分组</span>
+        <span></span>
+      </div>
+
+      <div class="rows" id="mailList"></div>
+
+      <div class="pagination">
+        <button class="btn btn-ghost btn-sm" id="previousPageBtn" type="button">上一页</button>
+        <span id="pageSummary">第 1 / 1 页</span>
+        <button class="btn btn-ghost btn-sm" id="nextPageBtn" type="button">下一页</button>
+      </div>
+    </section>
+
+    <details class="panel collapsible" id="claimHistoryPanel">
+      <summary>
+        领取记录
+        <span class="chip" id="claimHistoryCount">0</span>
+      </summary>
+      <div id="claimHistoryList"></div>
+    </details>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <div class="menu menu-floating" id="rowMenu" role="menu" hidden></div>
+
+  <dialog id="mailDialog" aria-labelledby="mailDialogTitle">
+    <div class="dialog-head">
+      <h2 id="mailDialogTitle">邮件内容</h2>
+      <button class="btn btn-ghost btn-icon" data-close-dialog type="button" aria-label="关闭">
+        ×
+      </button>
+    </div>
+    <div class="dialog-body" id="mailPreview"></div>
+  </dialog>
+
+  <dialog id="apiKeyDialog" aria-labelledby="apiKeyTitle">
+    <div class="dialog-head">
+      <h2 id="apiKeyTitle">输入本机 API Key</h2>
+    </div>
+    <div class="dialog-body">
+      <p class="hint">密钥只保存在当前标签页的 sessionStorage，不会写入 localStorage。</p>
+      <label class="field">
+        API Key
+        <input id="apiKeyInput" type="password" autocomplete="off" />
+      </label>
+      <p class="inline-error" id="apiKeyError" role="alert"></p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-primary" id="apiKeySubmit" type="button">验证并继续</button>
+    </div>
+  </dialog>
+
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+    <div class="dialog-head">
+      <h2 id="settingsTitle">设置</h2>
+      <button class="btn btn-ghost btn-icon" data-close-dialog type="button" aria-label="关闭">
+        ×
+      </button>
+    </div>
+    <div class="dialog-body">
+      <p class="hint">自动生成计划与标签前缀保存在本机服务；显示偏好留在当前浏览器，API Key 仅保存在当前标签页。</p>
+
+      <div class="field-grid">
+        <label class="field">
+          iCloud 标签前缀
+          <input id="icloudPrefix" value="hme" autocomplete="off" />
+        </label>
+        <label class="field">
+          每页显示
+          <select id="pageSizeSetting">
+            <option value="25">25 条</option>
+            <option value="50">50 条</option>
+            <option value="100">100 条</option>
+          </select>
+        </label>
+        <label class="field">
+          导入导出分隔符
+          <input id="separator" value="----" />
+        </label>
+      </div>
+
+      <div class="field">
+        主题
+        <div class="segmented" id="themeSegmented" role="group" aria-label="主题">
+          <button type="button" data-theme-value="auto" aria-pressed="true">跟随系统</button>
+          <button type="button" data-theme-value="light" aria-pressed="false">浅色</button>
+          <button type="button" data-theme-value="dark" aria-pressed="false">深色</button>
+        </div>
+      </div>
+
+      <div class="field">
+        自动补货
+        <small>本机服务每小时最多生成 5 个；关闭页面后仍继续，电脑及服务需保持运行。</small>
+        <div>
+          <button class="btn btn-outline" id="autoGenerateToggle" type="button" aria-pressed="true">
+            自动生成：开
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        其他
+        <div class="toolbar-group">
+          <button class="btn btn-outline" id="notifyBtn" type="button">开启桌面通知</button>
+          <button class="btn btn-outline" id="resetApiKeyBtn" type="button">
+            重新输入 API Key
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/assets/design-system.js"></script>
+  <script type="module" src="/assets/dashboard.js"></script>
+</body>
+</html>

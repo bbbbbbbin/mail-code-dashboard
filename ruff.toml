@@ -1,0 +1,16 @@
+# Pinned so a new ruff release cannot turn CI red on its own. ruff's default
+# rule set widens between minor versions; this file states exactly what this
+# repository enforces.
+
+target-version = "py312"
+line-length = 120
+
+[lint]
+select = [
+  "E",    # pycodestyle errors
+  "F",    # pyflakes
+  "I",    # import sorting
+  "UP",   # pyupgrade
+  "B",    # flake8-bugbear
+  "DTZ",  # timezone-aware datetimes
+]

@@ -1,0 +1,10 @@
+{
+  "host": "imap.example.com",
+  "port": 993,
+  "secure": true,
+  "email": "your-mail@example.com",
+  "password": "your-imap-app-password",
+  "mailboxes": ["INBOX", "Junk"],
+  "messageLimit": 100,
+  "pollIntervalMs": 1000
+}

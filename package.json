@@ -1,0 +1,18 @@
+{
+  "name": "mail-code-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "imapflow": "^1.0.195",
+    "jsdom": "^29.1.1",
+    "mailparser": "^3.9.9"
+  }
+}
