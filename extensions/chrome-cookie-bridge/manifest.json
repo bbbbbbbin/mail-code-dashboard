@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
   "name": "iCloud Cookie Bridge for Chrome",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Send this Chrome profile's iCloud session cookies to its local mail dashboard.",
   "minimum_chrome_version": "96",
   "permissions": ["cookies", "alarms", "storage"],
+  "optional_host_permissions": ["https://*/*"],
   "host_permissions": [
     "https://*.icloud.com/*",
     "https://*.icloud.com.cn/*",

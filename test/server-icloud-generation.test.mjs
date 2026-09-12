@@ -229,7 +229,7 @@ test("both the sequence and cookie entry points use the atomic secret writer", a
   }
 });
 
-test("the Python fallback returns a payload and cannot write the real cookie target", async () => {
+test("the Python fallback returns a payload and cannot write the real cookie target", { skip: process.platform !== 'win32' }, async () => {
   const refreshICloudCookiesFromEdge = requireHook("refreshICloudCookiesFromEdge");
   const setExecFileAsync = requireHook("setExecFileAsync");
   const setSecretFileIo = requireHook("setSecretFileIo");
@@ -296,7 +296,7 @@ test("the Python fallback returns a payload and cannot write the real cookie tar
   });
 });
 
-test("a slow Python fallback cannot overwrite a newer extension cookie sync", async () => {
+test("a slow Python fallback cannot overwrite a newer extension cookie sync", { skip: process.platform !== 'win32' }, async () => {
   const acceptEdgeCookieBridge = requireHook("acceptEdgeCookieBridge");
   const refreshICloudCookiesFromEdge = requireHook("refreshICloudCookiesFromEdge");
   const setExecFileAsync = requireHook("setExecFileAsync");
@@ -365,7 +365,7 @@ test("a slow Python fallback cannot overwrite a newer extension cookie sync", as
   }
 });
 
-test("malformed sensitive Python stdout never reaches the refresh status", async () => {
+test("malformed sensitive Python stdout never reaches the refresh status", { skip: process.platform !== 'win32' }, async () => {
   const getICloudLoginStatus = requireHook("getICloudLoginStatus");
   const refreshICloudCookiesFromEdge = requireHook("refreshICloudCookiesFromEdge");
   const setExecFileAsync = requireHook("setExecFileAsync");

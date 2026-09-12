@@ -72,6 +72,15 @@
     <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴当前实例 api-key.txt 的内容" />
     <div class="hint" id="keyHint">未保存 API key。</div>
     <button id="saveBtn" class="secondary">保存设置</button>
+    <hr />
+    <label><input id="hostedEnabled" type="checkbox" />使用服务器模式（不再发往本机）</label>
+    <label for="hostedOrigin">服务器 HTTPS 地址</label><input id="hostedOrigin" placeholder="https://HOST" />
+    <label for="hostedAccount">绑定账号编号</label><input id="hostedAccount" placeholder="从后台复制 accountId" />
+    <label for="hostedRegion">iCloud 区域</label><select id="hostedRegion"><option value="global">全球 icloud.com</option><option value="china">中国大陆 icloud.com.cn</option></select>
+    <label for="hostedToken">账号专属同步密钥</label><input id="hostedToken" type="password" autocomplete="off" placeholder="upl_…（非管理员或收件 Token）" />
+    <div class="hint" id="hostedHint">默认本机模式。服务器模式仅上传当前 Chrome 配置文件的 Cookie。</div>
+    <button id="hostedSave" class="secondary">保存服务器绑定</button>
     <script src="popup.js"></script>
+    <script src="hosted-popup.js"></script>
   </body>
 </html>

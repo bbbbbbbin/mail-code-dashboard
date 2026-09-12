@@ -9,11 +9,12 @@ const files = [...new Set(execFileSync("git", ["ls-files", "--cached", "--others
 const forbiddenPath = /(?:^|\/)(?:node_modules|__pycache__|exports|\.venv|\.git)(?:\/|$)|(?:^|\/)(?:cookies\.txt|api-key\.txt|mail-forward\.config\.json|icloud-label-sequence\.json|\.env(?:\..*)?)$|\.(?:log|zip|pyc)$/i;
 const failures = [];
 for (const file of files) {
-  if (forbiddenPath.test(file) || /^(runtime|logs)\//.test(file) && !file.endsWith("/.gitkeep")) failures.push(`private path: ${file}`);
+  if (forbiddenPath.test(file) || /^(data|secrets)\//.test(file) || /\.(enc|sqlite|db|pem|key)$/.test(file) || /^(runtime|logs)\//.test(file) && !file.endsWith("/.gitkeep")) failures.push(`private path: ${file}`);
   if (/wildmango/i.test(file)) failures.push(`excluded feature: ${file}`);
-  if (/\.(?:md|mjs|js|html|json|py|ps1|yml)$/.test(file)) {
+  if (/\.(?:md|mjs|js|html|json|py|ps1|yml|yaml)$/.test(file)) {
     const text = readFileSync(resolve(root, file), "utf8");
     if (/gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY-----/.test(text)) failures.push(`credential pattern: ${file}`);
+    if (/\b(?:upl|api|mbx|ses)_[A-Za-z0-9_-]{43}\b/.test(text)) failures.push(`hosted credential pattern: ${file}`);
     if (file.endsWith(".md")) {
       for (const match of text.matchAll(/(?<!!)\[[^\]]+\]\(([^)\s]+)\)/g)) {
         const target = match[1].split("#")[0];

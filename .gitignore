@@ -6,6 +6,8 @@ runtime/*
 logs/*
 !logs/.gitkeep
 exports/
+data/
+secrets/
 icloud-label-sequence.json
 
 .env

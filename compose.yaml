@@ -1,0 +1,56 @@
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    image: mail-code-dashboard:${APP_VERSION:-local}
+    init: true
+    restart: unless-stopped
+    environment:
+      PUBLIC_ORIGIN: https://${ADMIN_DOMAIN:?Set ADMIN_DOMAIN in .env}
+      MAIL_ORIGIN: https://${MAIL_DOMAIN:?Set MAIL_DOMAIN in .env}
+    secrets:
+      - master-key
+    volumes:
+      - mail-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 30s
+    pids_limit: 100
+    logging:
+      driver: json-file
+      options: { max-size: 5m, max-file: '3' }
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    environment:
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN}
+      MAIL_DOMAIN: ${MAIL_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      app: { condition: service_healthy }
+  initialize:
+    image: mail-code-dashboard:${APP_VERSION:-local}
+    profiles: [setup]
+    entrypoint: ['node', 'scripts/hosted-init.mjs']
+    environment:
+      DATA_DIR: /data
+      MASTER_KEY_FILE: /run/secrets/master-key
+    secrets: [master-key, admin-password]
+    volumes: [mail-data:/data]
+secrets:
+  master-key:
+    file: ./secrets/master-key
+  admin-password:
+    file: ./secrets/admin-password
+volumes:
+  mail-data:
+  caddy-data:
+  caddy-config:

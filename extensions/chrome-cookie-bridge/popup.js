@@ -26,7 +26,7 @@ async function renderStatus() {
     statusEl.textContent = "暂无同步记录。请确认当前 Chrome 配置文件已登录 iCloud，然后点立即同步。";
     return;
   }
-  const endpoint = status.endpoint ? `\n目标：${status.endpoint}` : "";
+  const endpoint = (status.endpoint ? `\n目标：${status.endpoint}` : "") + (status.account ? `\n绑定账号：${status.account}` : "");
   statusEl.textContent = status.ok
     ? `OK\n同步时间：${status.at}\nCookie 数量：${status.count || 0}${endpoint}`
     : `失败\n时间：${status.at}\n原因：${status.error || "unknown"}${endpoint}`;

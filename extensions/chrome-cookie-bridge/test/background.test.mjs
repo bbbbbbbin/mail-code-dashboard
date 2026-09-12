@@ -113,10 +113,12 @@ function loadBackground({
       ok: state.response.ok,
       status: state.response.status,
       async text() { return state.response.text; }
+      ,async json() { return JSON.parse(state.response.text); }
     };
   }
 
   const context = vm.createContext({
+    URL,
     chrome,
     fetch: fetchImpl,
     console,
@@ -186,6 +188,30 @@ function loadPopup({ storage = {} } = {}) {
     read: expression => vm.runInContext(expression, context)
   };
 }
+
+test('hosted bridge sends only scoped upload key and expected account, preserving local credentials', async () => {
+  const accountId = '11111111-1111-4111-8111-111111111111';
+  const h = loadBackground({ cookies: [SESSION_COOKIE, WEBAUTH_COOKIE], storage: { bridgeApiKey: 'local-secret', hostedBridge: { enabled: true, origin: 'https://dashboard.example.test', accountId, token: 'upl_synthetic', region: 'global' } }, response: { ok: true, status: 200, text: JSON.stringify({ account: { id: accountId, name: 'Account A' } }) } });
+  await h.read('syncCookies()');
+  assert.equal(h.state.fetches.length, 1);
+  const request = h.state.fetches[0]; assert.equal(request.url, 'https://dashboard.example.test/bridge/v1/sync');
+  assert.equal(request.init.headers.Authorization, 'Bearer upl_synthetic'); assert.equal(request.init.headers['X-API-Key'], undefined);
+  assert.equal(JSON.parse(request.init.body).expectedAccountId, accountId); assert.equal(request.init.redirect, 'error');
+  assert.equal(h.state.storage.bridgeApiKey, 'local-secret'); assert.equal(h.state.storage.lastSyncStatus.response, undefined);
+});
+test('hosted bridge rejects insecure targets and conflicting account cookies without falling back locally', async () => {
+  const config = { enabled: true, origin: 'http://dashboard.example.test', accountId: '11111111-1111-4111-8111-111111111111', token: 'upl_synthetic' };
+  const h = loadBackground({ cookies: [SESSION_COOKIE, WEBAUTH_COOKIE], storage: { bridgeApiKey: 'local-secret', hostedBridge: config } });
+  await h.read('syncCookies()'); assert.equal(h.state.fetches.length, 0); assert.equal(h.state.storage.lastSyncStatus.ok, false);
+  config.origin = 'https://dashboard.example.test'; h.state.storage.hostedBridge = config;
+  h.state.cookies.push({ ...SESSION_COOKIE, value: 'another-account-session' });
+  await h.read('syncCookies()'); assert.equal(h.state.fetches.length, 0);
+});
+test('hosted rejection stores no response body and surfaces identity mismatch', async () => {
+  const h = loadBackground({ cookies: [SESSION_COOKIE, WEBAUTH_COOKIE], storage: { hostedBridge: { enabled: true, origin: 'https://dashboard.example.test', accountId: '11111111-1111-4111-8111-111111111111', token: 'upl_synthetic' } }, response: { ok: false, status: 409, text: 'SENSITIVE_UPSTREAM_BODY' } });
+  await h.read('syncCookies()'); assert.match(h.state.storage.lastSyncStatus.error, /账号不匹配/);
+  assert.ok(!JSON.stringify(h.state.storage.lastSyncStatus).includes('SENSITIVE_UPSTREAM_BODY'));
+});
 
 function lastBody(state) {
   return JSON.parse(state.fetches[state.fetches.length - 1].init.body);

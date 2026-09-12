@@ -126,6 +126,8 @@ async function collectAppleCookies() {
 
 async function syncCookies() {
   try {
+    const hosted = (await chrome.storage.local.get('hostedBridge')).hostedBridge;
+    if (hosted?.enabled) return await syncHostedCookies(hosted);
     const apiKey = await readApiKey();
     if (!apiKey) {
       const status = { ok: false, error: MISSING_API_KEY_ERROR };
@@ -165,6 +167,38 @@ async function syncCookies() {
     await setStatus(status);
     return status;
   }
+}
+
+function hostedOrigin(value) {
+  const url = new URL(value);
+  if (url.protocol !== 'https:' || url.origin !== value || url.username || url.password) throw new Error('服务器地址必须是 HTTPS 域名，不含路径或参数。');
+  return url.origin;
+}
+
+async function syncHostedCookies(config) {
+  const origin = hostedOrigin(config.origin);
+  if (!config.token?.startsWith('upl_') || !/^[0-9a-f-]{36}$/.test(config.accountId || '')) throw new Error('请先保存服务器的账号编号与专属同步密钥。');
+  const suffix = config.region === 'china' ? 'icloud.com.cn' : 'icloud.com';
+  const cookies = await chrome.cookies.getAll({ domain: suffix });
+  const byName = new Map();
+  for (const item of cookies) {
+    const name = CANONICAL_COOKIE_NAMES.get(String(item.name || '').toLowerCase());
+    if (!name) continue;
+    if (byName.has(name) && byName.get(name) !== item.value) throw new Error('当前 Chrome 存在相互冲突的 iCloud Cookie，请核对登录配置文件。');
+    byName.set(name, item.value);
+  }
+  const endpoint = `${origin}/bridge/v1/sync`;
+  const response = await fetch(endpoint, { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.token}` },
+    body: JSON.stringify({ expectedAccountId: config.accountId, cookies: [...byName].map(([name, value]) => ({ name, value })) }) });
+  if (!response.ok) {
+    // Status only; never persist an arbitrary server body or an echoed secret.
+    throw new Error(response.status === 409 ? '账号不匹配，服务器拒绝覆盖，请核对绑定。' : `服务器同步未完成（HTTP ${response.status}），请查看后台状态。`);
+  }
+  const result = await response.json();
+  if (result?.account?.id !== config.accountId) throw new Error('服务器返回账号与扩展绑定不一致。');
+  const status = { ok: true, count: byName.size, endpoint, account: String(result.account.name || '').slice(0, 60) };
+  await setStatus(status);
+  return status;
 }
 
 let debounceTimer = null;

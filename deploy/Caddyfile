@@ -1,0 +1,12 @@
+{$ADMIN_DOMAIN} {
+  reverse_proxy app:8080
+}
+{$MAIL_DOMAIN} {
+  @allowed path /inbox /ui/* /mail-api/* /healthz
+  handle @allowed {
+    reverse_proxy app:8080
+  }
+  handle {
+    respond "Not found" 404
+  }
+}

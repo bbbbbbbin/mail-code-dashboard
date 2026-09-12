@@ -4,9 +4,10 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [windows-latest, ubuntu-latest]
         node: ['22.13.0', '24']
     steps:
       - uses: actions/checkout@v4
@@ -22,3 +23,14 @@ jobs:
       - run: node --test extensions/chrome-cookie-bridge/test/background.test.mjs
       - run: python extensions/chrome-cookie-bridge/scripts/validate_extension.py
       - run: node scripts/check-distribution.mjs
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: docker build --target runtime -t mail-dashboard-test .
+      - run: docker build --target test -t mail-dashboard-unit .
+      - run: docker run --rm mail-dashboard-unit
+      - run: node scripts/smoke-hosted-container.mjs mail-dashboard-test
