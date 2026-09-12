@@ -1,6 +1,6 @@
 # Server platform — agreed scope
 
-Status: locally implemented and verified with synthetic accounts. CLI publication pending authentication. No production migration or deployment yet.
+Status: implemented and verified with synthetic accounts; uploaded using Git CLI. GitHub's Windows/Linux Node 22/24 matrix and default Node 24 Docker build, tests and persistence smoke all passed for d817af7. No production migration or deployment yet.
 
 ## User decisions
 

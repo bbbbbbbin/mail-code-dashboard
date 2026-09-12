@@ -37,8 +37,11 @@ node scripts/smoke-hosted-container.mjs mail-dashboard-test
 
 默认镜像为 Node 24。此次本机拉取 Node 24 被 Docker Hub 网络故障中断，改用已有官方 Node 22.23.0 镜像完成 Linux 验证：构建时附加 `--build-arg NODE_IMAGE=node:22-bookworm-slim`。这不等于默认 Node 24 镜像已完成本机验证；GitHub CI 设置了 Node 22 / 24、Windows / Ubuntu 及默认 Docker 构建。
 
+## GitHub 验证与发布
+
+已通过 Git CLI 上传服务器版代码。提交 `d817af7` 的 [GitHub CI](https://github.com/bbbbbbbin/mail-code-dashboard/actions/runs/34702433265) 全部通过：Windows / Ubuntu × Node 22.13.0 / 24，以及默认 Node 24 Docker 镜像构建、容器单元测试和持久化重启测试。上文 Node 24 本机网络问题不影响此次远端验证结果。
+
 ## 尚未执行
 
-- GitHub CLI 认证后的发布及远端 CI 确认。
 - Linux 服务器真实域名、证书、Apple 账号和转发 IMAP 的联调。
 - 本机 4173 / 4174 数据迁移。必须按 [迁移清单](server-migration.md) 单独备份、预演和切换；此阶段不动旧服务。
