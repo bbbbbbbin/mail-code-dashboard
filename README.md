@@ -12,6 +12,41 @@
 - **权限分离**：管理员登录、程序 API Key、Cookie 同步密钥和收件 Token 使用不同权限。
 - **Docker 部署**：提供 Docker Compose、双域名 HTTPS 入口、持久化数据卷和健康检查。
 
+## 界面预览
+
+浅色界面支持桌面与手机使用；自动刷新默认关闭，可按需开启。
+
+> 以下截图均使用合成示例数据，不包含真实账号、邮件或密钥。
+
+### 邮箱总览
+
+统一查看邮箱库存与分发状态，按账号、关键词筛选，并一键复制邮箱地址。
+
+![管理后台邮箱总览：邮箱统计、筛选条件与邮箱列表](docs/screenshots/admin-overview.jpg)
+
+<details>
+<summary>查看更多：账号管理、桌面收件页与手机收件页</summary>
+
+### 账号管理
+
+分别查看各账号的身份、收件配置与生成任务状态。
+
+![iCloud 账号管理：独立账号及其收件与生成状态](docs/screenshots/account-management.jpg)
+
+### 桌面收件页
+
+突出显示当前邮箱地址，支持一键复制、手动刷新与纯文本邮件阅读。
+
+![桌面收件页：邮箱地址、复制按钮、邮件列表与正文](docs/screenshots/inbox-desktop.jpg)
+
+### 手机收件页
+
+窄屏下保持清晰的邮箱身份、刷新操作与邮件内容。
+
+<img src="docs/screenshots/inbox-mobile.jpg" alt="手机收件页：适配窄屏的邮箱地址、操作区与邮件列表" width="320">
+
+</details>
+
 ## 快速开始
 
 服务器部署需要 Linux、Docker Compose、两个域名，以及可访问 iCloud 和 IMAP 的网络。
