@@ -7,8 +7,10 @@
 - 一个管理后台聚合多个独立账号。每个账号有自己的库存、生成队列与冷却时间。
 - 账号创建时填写预期 Apple 登录邮箱；同步 Cookie 时通过 Apple 的认证会话核验身份，首次绑定后不自动改绑。Cookie 与转发授权码在 `platform.enc` 内加密保存，主密钥不在数据卷中。
 - 管理员通过密码登录；程序 key 按账号与 scope 授权；扩展只用 upload key；收件人只用 mailbox token。
-- 创建账号、生成/同步/导入邮箱不会创建收件 Token。只有明确“分发”才创建；默认永久，不设到期时间。浏览器会话独立设为 12 小时，到期重新输入原 Token 即可。
-- 原分发可以撤销或重置给同一使用者，不自动二次分发。重置保留原收件时间边界，旧会话立即失效。
+- 创建账号、生成/同步/导入邮箱不会创建收件 Token。只有明确“分发”才创建。管理页默认分享 7 天，支持 7 / 30 / 90 天、自定义 1–3650 天或永久；原有永久分享不受升级影响。
+- 有效期从服务端创建时间起算，一天为 24 小时。服务端在登录、取信前和取信后核验到期时间，已打开的会话也受限制。
+- 原分发可以撤销或重置给同一使用者，不自动二次分发。重置保留原收件时间边界及到期时间；需要延期时单独调整有效期。更改有效期从操作时起重新计算，并使旧会话失效；已撤销的授权保持撤销。
+- 浏览器会话最长 12 小时；会话过期后，重新打开仍有效的原始链接或输入对应 Token 登录。
 - 收件页使用准确收件头匹配、IMAP 接收时间边界，展示纯文本正文与验证码，默认不开放旧邮件；没有第三方跟踪图片。当前展示最近 50 封匹配邮件，不承诺永久保存全部邮件正文，实际保留期由转发邮箱决定。
 - 此版是单实例单写入者；不要把同一个数据卷挂载给多个应用实例。
 
@@ -47,7 +49,15 @@ Compose secrets 是文件挂载，**不是宿主机自动加密**。妥善保护
 3. 对应 Chrome 加载仓库中的 `extensions/chrome-cookie-bridge` 扩展，开启服务器模式，保存上述三项及 iCloud 区域。只授权实际服务器域名。
 4. 在该 Chrome 登录 iCloud 并同步；核验成功后在后台启用账号。
 5. 配置该账号的转发 IMAP 邮箱及应用授权码。先同步库存和检查邮件，再开启后台生成。
-6. 选中邮箱“分发”，获得收件域名 `/inbox` 和 Token。仅给该邮箱的使用者。
+6. 选中邮箱“分享”，选择有效天数，复制收件链接。接收方打开链接即自动登录；也保留手动输入 Token 的入口。链接只给该邮箱的使用者。
+
+### 链接与到期管理
+
+链接形式为 `https://inbox.example.test/inbox#token=TOKEN`。片段由浏览器处理，不随初始 HTTP 请求发送；页面在使用前清除片段，然后通过 HTTPS 请求体交换收件会话。页面不会把 Token 保存在 localStorage / sessionStorage。不要使用把 Token 放在查询参数、路径或访问日志中的外部短链服务。
+
+完整链接仅在创建或重置时返回，服务端仍只保存 Token 摘要。在“分享管理”可以查看到期时间，调整有效期、重置或撤销。调整为有限期时从当前服务端时间起算，而不是叠加剩余天数；选择永久后取消到期限制。重置只更换凭证，不自动续期；原邮件可见时间范围与分发对象不变。
+
+链接持有者具有该邮箱的收件权限。聊天软件、浏览器扩展和剪贴板工具仍可能接触完整链接；片段机制不等于一次性链接或实名身份验证。撤销或到期阻止后续取信，已被接收方阅读、复制或下载的内容不会被追回。
 
 Chrome 关闭时不继续同步 Cookie；已有 Cookie 是否有效取决于 Apple。Apple 的网页接口并非稳定的公开 API；身份核验失败会保留旧配置并阻止覆盖。合成测试不等于真实 Apple 登录和服务器网络已验收。
 
@@ -59,6 +69,21 @@ Chrome 关闭时不继续同步 Cookie；已有 Cookie 是否有效取决于 App
 - `GET /admin-api/accounts/ACCOUNT_ID/emails/EMAIL_ID/messages`，需要 `mail:read`。
 - `POST /admin-api/accounts/ACCOUNT_ID/generate`，需要 `generate`；后台默认只创建读取权限的程序 key。
 - Cookie：`POST /bridge/v1/sync`，upload key；body 为 `{ "expectedAccountId": "ACCOUNT_ID", "cookies": [{ "name": "COOKIE_NAME", "value": "COOKIE_VALUE" }] }`。
+
+### 管理员分享接口
+
+以下接口只允许管理员会话，并要求匹配的 `Origin` 和 `X-CSRF-Token`；程序 key 不具备分享管理权限。
+
+- `POST /admin-api/accounts/ACCOUNT_ID/distribute`
+  - 请求：`{ "emailIds": ["EMAIL_ID"], "recipient": "分享用途", "includeHistory": false, "durationDays": 7 }`。
+  - `durationDays` 为 1–3650 的整数，`null` 表示永久。为兼容已有调用方，API 省略此字段也按永久处理；管理页始终提交明确选择。
+  - 响应包含 `inboxUrl` 和 `grants`；每个 grant 在本次响应中带独立 `token`、`shareUrl`、`expiresAt`。批量分享不共用凭证。
+- `PATCH /admin-api/grants/GRANT_ID`：请求 `{ "durationDays": 30 }` 或 `{ "durationDays": null }`，显式调整原授权有效期，不生成新 Token。
+- `POST /admin-api/grants/GRANT_ID/reset`：重置凭证，响应含新 `token`、`shareUrl`、`inboxUrl`；旧链接与会话失效，到期时间不自动延长。
+- `POST /admin-api/grants/GRANT_ID/revoke`：撤销后停止该授权取信，不删除邮箱。
+- `GET /admin-api/grants`：返回分享记录，状态包括 `active`、`expired`、`revoked`；不返回完整 Token、链接或 Token 摘要。
+
+`POST /mail-api/login` 与 `GET /mail-api/messages` 返回实际 `expiresAt`（永久为 `null`）。过期授权返回 HTTP 401 / `MAIL_ACCESS_EXPIRED`。无效天数返回 HTTP 400 / `INVALID_DURATION_DAYS`，校验失败不生成授权。
 
 程序 key 与收件 Token 都不具备管理员账号管理权限。不同账号的 key 混用会被拒绝。
 

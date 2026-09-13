@@ -27,6 +27,7 @@ export function createHostedServer({ platform, adminOrigin, mailOrigin = adminOr
   const adminURL = originValue(adminOrigin, allowHttp), mailURL = originValue(mailOrigin, allowHttp);
   if (!allowHttp && adminURL.hostname === mailURL.hostname) throw new Error('SEPARATE_ADMIN_AND_MAIL_HOSTS_REQUIRED');
   const sessions = new Map(), rates = new Map();
+  const withShareUrl = grant => ({ ...grant, shareUrl: `${mailOrigin}/inbox#token=${encodeURIComponent(grant.token)}` });
   const secure = adminURL.protocol === 'https:';
   const cookieName = kind => `${secure ? '__Host-' : ''}md_${kind}`;
   function sessionCookie(res, kind, token, clear = false) {
@@ -82,11 +83,14 @@ export function createHostedServer({ platform, adminOrigin, mailOrigin = adminOr
         return send(res, 200, await platform.syncCookies(token, b.cookies));
       }
       if (path === '/mail-api/login' && req.method === 'POST') {
-        origin(req, mailOrigin); rate(req, 'mail-login', 30);
+        origin(req, mailOrigin);
+        // A new share link replaces the current mailbox, including failed/expired logins.
+        sessions.delete(digest(cookie(req, cookieName('mail')))); sessionCookie(res, 'mail', '', true);
+        rate(req, 'mail-login', 30);
         const g = await platform.authorizeGrant((await body(req)).token);
-        await platform.checkGrant(g.id, g.revision);
+        const checked = await platform.checkGrant(g.id, g.revision);
         createSession('mail', { grantId: g.id, revision: g.revision }, res);
-        return send(res, 200, { email: g.email, expiresAt: null });
+        return send(res, 200, { email: checked.email, expiresAt: checked.expiresAt ?? null });
       }
       if (path.startsWith('/mail-api/')) {
         const s = session(req, 'mail');
@@ -98,7 +102,8 @@ export function createHostedServer({ platform, adminOrigin, mailOrigin = adminOr
         // Authorization is checked again after IMAP I/O: revoke during a slow fetch is effective.
         await platform.checkGrant(s.grantId, s.revision);
         await platform.state.mutate(st => { const item = st.grants.find(item => item.id === g.id); if (item && (!item.lastUsedAt || Date.parse(item.lastUsedAt) + 60000 < Date.now())) item.lastUsedAt = iso(); });
-        return send(res, 200, { email: g.email, expiresAt: null, messages });
+        const checked = await platform.checkGrant(s.grantId, s.revision);
+        return send(res, 200, { email: checked.email, expiresAt: checked.expiresAt ?? null, messages });
       }
       if (path.startsWith('/admin-api/')) {
         let principal;
@@ -129,7 +134,7 @@ export function createHostedServer({ platform, adminOrigin, mailOrigin = adminOr
         if (path === '/admin-api/inventory' && req.method === 'GET') return send(res, 200, { accounts: await platform.inventory(undefined, { includeSettings: true }) });
         if (path === '/admin-api/scan-mail' && req.method === 'POST') return send(res, 200, { results: await platform.scanAll() });
         if (path === '/admin-api/keys' && req.method === 'GET') return send(res, 200, { keys: (await platform.state.read()).keys.map(({ hash, ...k }) => k) });
-        if (path === '/admin-api/grants' && req.method === 'GET') return send(res, 200, { grants: (await platform.state.read()).grants.map(publicGrant) });
+        if (path === '/admin-api/grants' && req.method === 'GET') return send(res, 200, { grants: (await platform.state.read()).grants.map(g => publicGrant(g)) });
         if (path === '/admin-api/audit' && req.method === 'GET') return send(res, 200, { events: (await platform.state.read()).audit.slice(-200).reverse() });
         const keyAction = /^\/admin-api\/keys\/([0-9a-f-]{36})\/revoke$/.exec(path);
         if (keyAction && req.method === 'POST') {
@@ -137,13 +142,18 @@ export function createHostedServer({ platform, adminOrigin, mailOrigin = adminOr
           return send(res, 200, { ok: true });
         }
         const grantAction = /^\/admin-api\/grants\/([0-9a-f-]{36})\/(reset|revoke)$/.exec(path);
-        if (grantAction && req.method === 'POST') return send(res, 200, await platform.changeGrant(grantAction[1], grantAction[2]));
+        if (grantAction && req.method === 'POST') {
+          const grant = await platform.changeGrant(grantAction[1], grantAction[2]);
+          return send(res, 200, grantAction[2] === 'reset' ? { ...withShareUrl(grant), inboxUrl: `${mailOrigin}/inbox` } : grant);
+        }
+        const grantEdit = /^\/admin-api\/grants\/([0-9a-f-]{36})$/.exec(path);
+        if (grantEdit && req.method === 'PATCH') return send(res, 200, await platform.updateGrant(grantEdit[1], (await body(req)).durationDays));
         if (accountId) {
           await platform.account(accountId);
           if (!suffix && req.method === 'PATCH') return send(res, 200, await platform.updateAccount(accountId, await body(req)));
           if (suffix === 'inventory' && req.method === 'GET') return send(res, 200, { accounts: await platform.inventory(accountId) });
           if (suffix === 'keys' && req.method === 'POST') { const b = await body(req); return send(res, 201, await platform.createKey(accountId, b.kind, b.name, b.scopes)); }
-          if (suffix === 'distribute' && req.method === 'POST') { const b = await body(req); return send(res, 201, { grants: await platform.distribute(accountId, b.emailIds, b.recipient, b.includeHistory ?? false), inboxUrl: `${mailOrigin}/inbox` }); }
+          if (suffix === 'distribute' && req.method === 'POST') { const b = await body(req); return send(res, 201, { grants: (await platform.distribute(accountId, b.emailIds, b.recipient, b.includeHistory ?? false, b.durationDays)).map(withShareUrl), inboxUrl: `${mailOrigin}/inbox` }); }
           if (suffix === 'sync' && req.method === 'POST') return send(res, 200, await platform.syncInventory(accountId));
           if (suffix === 'scan-mail' && req.method === 'POST') return send(res, 200, await platform.scanMail(accountId));
           if (suffix === 'auto-stock' && req.method === 'PATCH') {

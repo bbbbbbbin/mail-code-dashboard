@@ -18,7 +18,7 @@ python extensions/chrome-cookie-bridge/scripts/validate_extension.py
 node scripts/check-distribution.mjs
 ```
 
-覆盖账号隔离、Cookie 身份核验、分发原子性、永久 Token、会话撤销、访问权限、邮件匹配、后台任务、状态持久化和页面交互。
+覆盖账号隔离、Cookie 身份核验、分发原子性、限时分享与旧永久 Token 兼容、到期边界、会话撤销、访问权限、邮件匹配、后台任务、状态持久化和页面交互。分享链接另行验证片段清除、自动登录、失效时不回退到其他邮箱，以及凭证不写入浏览器存储。
 
 ## 容器测试
 

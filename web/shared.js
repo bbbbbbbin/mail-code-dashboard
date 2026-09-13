@@ -73,7 +73,9 @@ Object.assign(messages, {
   APPLE_HME_SERVICE_UNAVAILABLE: 'Apple 尚未返回此账号的隐藏邮箱服务地址，请重新同步 Cookie 并检查 iCloud+ 服务。',
   GENERATION_RESULT_UNCERTAIN: '生成结果待核对，已暂停重复尝试；请先同步库存后再恢复。',
   INCOMPLETE_COOKIES: '当前 Chrome 的 iCloud 登录信息不完整，请重新登录后同步。',
-  INVALID_KEY: '密钥无效或已撤销，请检查所绑定的账号。'
+  INVALID_KEY: '密钥无效或已撤销，请检查所绑定的账号。',
+  MAIL_ACCESS_EXPIRED: '分享已到期，请联系分享人调整有效期后，重新打开原链接。',
+  INVALID_DURATION_DAYS: '分享天数需为 1–3650 的整数，或选择永久有效。'
 });
 export async function api(path, { method = 'GET', data, csrf } = {}) {
   const r = await fetch(path, { method, credentials: 'same-origin', cache: 'no-store', headers: { ...(data !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(csrf ? { 'X-CSRF-Token': csrf } : {}) }, ...(data !== undefined ? { body: JSON.stringify(data) } : {}) });

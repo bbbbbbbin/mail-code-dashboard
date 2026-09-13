@@ -322,3 +322,20 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Timed sharing uses the existing light palette and native form controls. */
+.share-duration-hint { font-size: 13px; margin: -4px 0 20px; line-height: 1.7; }
+.share-result { padding: 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); margin-top: 16px; }
+.share-email { display: block; font-size: 18px; overflow-wrap: anywhere; }
+.share-expiry { margin: 6px 0 20px; font-size: 13px; color: var(--accent); }
+.share-result textarea { font: 13px/1.7 var(--mono); overflow-wrap: anywhere; resize: vertical; min-height: 92px; background: var(--surface); }
+.share-result > .copy-button { min-height: 44px; padding-inline: 20px; }
+.share-compatibility { margin-top: 20px; color: var(--muted); font-size: 12px; }
+.share-compatibility summary { cursor: pointer; padding-block: 8px; }
+.share-token { margin-top: 8px; font-family: var(--mono); }
+.grant-state { display: grid; justify-items: start; gap: 6px; }
+td .grant-actions { flex-wrap: wrap; flex: 0 0 208px; width: 208px; max-width: 208px; }
+.grant-state small { font-size: 12px; line-height: 1.5; }
+.badge.grant-expired, .badge.grant-revoked { color: var(--danger); background: var(--danger-soft); }
+#grant-expiry { white-space: normal; line-height: 1.6; }
+@media (max-width: 640px) { .share-result { padding: 16px; } .share-result > .copy-button { width: 100%; } }

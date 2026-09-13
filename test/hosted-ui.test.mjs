@@ -40,7 +40,7 @@ async function ui(t) {
 test('selection uses both account and email ID, rejecting a mixed-account distribution', async t => {
   const u = await ui(t), inputs = [...u.w.document.querySelectorAll('tbody input')];
   inputs.forEach(input => { input.checked = true; input.dispatchEvent(new u.w.Event('change')); });
-  u.click('分发选中邮箱');
+  u.click('分享选中邮箱');
   assert.match(u.$('#notice').textContent, /同一账号/);
   assert.equal(u.$('dialog').open, false);
   assert.equal(u.calls.filter(c => c.path.endsWith('/distribute')).length, 0);
@@ -48,7 +48,7 @@ test('selection uses both account and email ID, rejecting a mixed-account distri
 
 test('distribute requires submit; token result remains open after asynchronous close event', async t => {
   const u = await ui(t);
-  u.click('分发');
+  u.click('分享');
   assert.equal(u.calls.filter(c => c.path.endsWith('/distribute')).length, 0);
   u.$('[name=recipient]').value = 'Synthetic owner';
   u.$('#dialog-form').dispatchEvent(new u.w.Event('submit', { cancelable: true }));
@@ -61,7 +61,7 @@ test('distribute requires submit; token result remains open after asynchronous c
 
 test('revoke response objects do not get invoked as callbacks; scanning is wired to the server', async t => {
   const u = await ui(t);
-  u.click('永久分发'); await u.settle();
+  u.click('分享管理'); await u.settle();
   assert.equal(u.$('[data-view=grants]').getAttribute('aria-current'), 'page');
   assert.equal(u.$('[data-view=inventory]').hasAttribute('aria-current'), false);
   u.click('撤销');

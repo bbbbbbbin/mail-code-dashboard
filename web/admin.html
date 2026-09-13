@@ -21,7 +21,7 @@
       <nav aria-label="管理导航">
         <button type="button" data-view="inventory" class="nav active" aria-current="page">邮箱总览</button>
         <button type="button" data-view="accounts" class="nav">iCloud 账号</button>
-        <button type="button" data-view="grants" class="nav">永久分发</button>
+        <button type="button" data-view="grants" class="nav">分享管理</button>
         <button type="button" data-view="keys" class="nav">接口密钥</button>
         <button type="button" data-view="audit" class="nav">操作记录</button>
       </nav>
@@ -68,10 +68,10 @@
           <div class="toolbar-title"><span class="section-kicker">当前视图</span><strong id="section-title">邮箱库</strong></div>
           <div class="filter-fields">
             <label>所属账号<select id="account-filter"><option value="">全部账号</option></select></label>
-            <label class="search-field">搜索邮箱<input id="search" type="search" placeholder="邮箱、标签或分发对象"></label>
-            <label>分发状态<select id="status-filter"><option value="">全部状态</option><option value="unassigned">未分发</option><option value="active">已分发</option><option value="revoked">已撤销</option></select></label>
+            <label class="search-field">搜索邮箱<input id="search" type="search" placeholder="邮箱、标签或分享对象"></label>
+            <label>分享状态<select id="status-filter"><option value="">全部状态</option><option value="unassigned">未分享</option><option value="active">有效分享</option><option value="finite">限时有效</option><option value="permanent">永久有效</option><option value="expired">已到期</option><option value="revoked">已撤销</option></select></label>
           </div>
-          <div class="toolbar-buttons"><button id="add-account" type="button">新增账号</button><button id="distribute-selected" class="primary" type="button">分发选中邮箱</button></div>
+          <div class="toolbar-buttons"><button id="add-account" type="button">新增账号</button><button id="distribute-selected" class="primary" type="button">分享选中邮箱</button></div>
         </div>
         <section id="content" aria-label="当前页面内容"></section>
       </div>

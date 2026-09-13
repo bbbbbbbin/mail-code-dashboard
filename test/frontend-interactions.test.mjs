@@ -108,7 +108,7 @@ test('admin: dialog stays locked through mutation, refresh and one-time result',
   const u = await ui(t), mutation = deferred(), inventory = deferred();
   u.routes.set('/admin-api/accounts/A/distribute', () => mutation.promise);
   u.routes.set('/admin-api/inventory', () => inventory.promise);
-  u.click('分发'); u.$('[name=recipient]').value = 'Fixture recipient';
+  u.click('分享'); u.$('[name=recipient]').value = 'Fixture recipient';
   u.submit('#dialog-form'); u.submit('#dialog-form');
   assert.equal(u.calls.filter(call => call.path.endsWith('/distribute')).length, 1);
   assert.equal(u.$('#dialog-submit').disabled, true);
@@ -120,7 +120,7 @@ test('admin: dialog stays locked through mutation, refresh and one-time result',
   const cancel = new u.w.Event('cancel', { cancelable: true }); u.$('#dialog').dispatchEvent(cancel);
   assert.equal(cancel.defaultPrevented, true);
   u.$('#dialog-close').click(); assert.equal(u.$('#dialog').open, true);
-  u.$('#add-account').onclick(); assert.match(u.$('#dialog-title').textContent, /永久分发/);
+  u.$('#add-account').onclick(); assert.match(u.$('#dialog-title').textContent, /分享 1 个邮箱/);
   mutation.resolve(response({ inboxUrl: 'https://example.test/inbox', grants: [{ email: 'mailbox-a@example.test', token: 'fixture-one-time-token' }] }));
   await settle();
   assert.equal(u.$('#dialog-submit').disabled, true);
