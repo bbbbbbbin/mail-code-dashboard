@@ -1,20 +1,29 @@
-import { $, api, copyButton, displayMail, element as el } from './shared.js';
+import { $, api, copyButton, displayMail, element as el, setPagePending } from './shared.js';
 let loading = false, refreshTimer = null, busy = false;
-function setBusy(value) { busy = value; document.body.classList.toggle('is-busy', value); const layer = $('#busy-layer'); if (layer) layer.hidden = !value; }
+function setBusy(value) { busy = value; setPagePending(value); }
 async function runAction(action) { if (busy) return; setBusy(true); try { return await action(); } finally { setBusy(false); } }
 const REFRESH_KEY = 'mail-dashboard-inbox-auto-refresh';
+function setAuthenticated(value) {
+  document.body.classList.toggle('is-authenticated', value);
+  $('#login-form').hidden = value; $('#mailbox').hidden = !value; $('#logout').hidden = !value;
+  if ($('#mailbox-identity-panel')) $('#mailbox-identity-panel').hidden = !value;
+  if ($('#inbox-description')) $('#inbox-description').textContent = value ? '你的专属邮件空间。复制地址、展开邮件，按需刷新。' : '输入分发给你的 Token，查看对应邮箱的邮件。';
+  if (!value) { clearInterval(refreshTimer); refreshTimer = null; }
+}
 async function refresh() {
   if (loading) return; loading = true;
+  const wasAuthenticated = document.body.classList.contains('is-authenticated');
   try {
     const data = await api('/mail-api/messages');
-    $('#login-form').hidden = true; $('#mailbox').hidden = false; $('#logout').hidden = false;
+    setAuthenticated(true);
     const mailboxName = $('#mailbox-name'); mailboxName.classList.add('mailbox-identity'); mailboxName.replaceChildren(el('strong', data.email), copyButton(data.email));
     displayMail(data.messages, $('#messages')); $('#notice').textContent = `已更新 ${new Date().toLocaleTimeString()}`; updateRefreshLabel(); scheduleRefresh();
+    if (busy) setPagePending(true);
   } catch (e) {
-    $('#notice').textContent = e.message;
+    $('#notice').textContent = e.status === 401 && !wasAuthenticated ? '' : e.message;
     if (e.status === 401 || e.status === 403 || e.status === 404 || e.status === 503) {
-      $('#messages').replaceChildren(); $('#mailbox').hidden = true; $('#login-form').hidden = false;
-      $('#mailbox-name').textContent = '输入分发给你的 Token，查看对应邮箱的邮件。';
+      $('#messages').replaceChildren(); setAuthenticated(false);
+      $('#mailbox-name').replaceChildren();
     }
   } finally { loading = false; }
 }
@@ -32,21 +41,22 @@ function updateRefreshLabel() {
 function scheduleRefresh() {
   clearInterval(refreshTimer); refreshTimer = null;
   const input = $('#auto-refresh'), interval = $('#refresh-interval');
-  if (input?.checked && !$('#mailbox')?.hidden) refreshTimer = setInterval(() => { if (busy || document.hidden || $('#mailbox')?.hidden) return; void refresh(); }, Number(interval?.value || 30) * 1000);
+  if (input?.checked && !$('#mailbox')?.hidden) refreshTimer = setInterval(() => { if (busy || document.hidden || $('#mailbox')?.hidden) return; void runAction(refresh); }, Number(interval?.value || 30) * 1000);
 }
 function saveRefreshSettings() {
+  if (busy) return;
   const input = $('#auto-refresh'), interval = $('#refresh-interval'); if (!input || !interval) return;
   try { localStorage.setItem(REFRESH_KEY, input.checked ? 'on' : 'off'); localStorage.setItem(`${REFRESH_KEY}-interval`, interval.value); } catch {}
   interval.disabled = !input.checked; updateRefreshLabel(); scheduleRefresh();
 }
 $('#login-form').addEventListener('submit', async e => {
-  e.preventDefault(); if (busy) return; const form = e.currentTarget, button = form.querySelector('button'); button.disabled = true;
-  try { await runAction(async () => { await api('/mail-api/login', { method: 'POST', data: { token: form.elements.token.value.trim() } }); form.reset(); await refresh(); }); }
-  catch (e) { $('#notice').textContent = e.message; } finally { button.disabled = false; }
+  e.preventDefault(); if (busy) return; const form = e.currentTarget, token = form.elements.token.value.trim();
+  try { await runAction(async () => { await api('/mail-api/login', { method: 'POST', data: { token } }); form.reset(); await refresh(); }); }
+  catch (e) { $('#notice').textContent = e.message; }
 });
 $('#refresh').onclick = () => { if (!busy) void runAction(refresh); };
 $('#auto-refresh').onchange = saveRefreshSettings;
 $('#refresh-interval').onchange = saveRefreshSettings;
 $('#logout').onclick = async () => { if (busy) return; try { await runAction(async () => { await api('/mail-api/logout', { method: 'POST', data: {} }); location.reload(); }); } catch (e) { $('#notice').textContent = e.message; } };
 refreshSettings();
-void refresh();
+void runAction(refresh);

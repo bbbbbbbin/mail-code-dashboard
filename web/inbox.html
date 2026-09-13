@@ -1,1 +1,48 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#101c27"><title>专属收件箱</title><link rel="stylesheet" href="/ui/site.css"><script type="module" src="/ui/inbox.js"></script></head><body class="inbox-page"><main class="inbox-main"><header class="inbox-top"><div class="brand-mark"><span class="brand-symbol">✳</span><div><strong>收件台</strong><span>PRIVATE MAILBOX</span></div></div><div class="inbox-top-status"><span class="status-led"></span>加密连接 <button id="logout" class="button-quiet" hidden>退出</button></div></header><section class="inbox-hero"><div><p class="eyebrow">PRIVATE INBOX / 01</p><h1>专属收件箱</h1><p class="hero-copy" id="mailbox-name">输入分发给你的 Token，查看对应邮箱的邮件。</p></div><div class="hero-stamp"><strong>01</strong><span>ONE MAILBOX<br>ONE TOKEN</span></div></section><p id="notice" role="status" aria-live="polite"></p><form id="login-form" class="card inbox-login"><div class="login-kicker">ACCESS TOKEN</div><h2>验证你的收件权限</h2><p class="muted">Token 由管理员单独分发，除非撤销或重置，否则永久有效。</p><label>收件 Token<input name="token" type="password" autocomplete="off" spellcheck="false" required placeholder="粘贴你的专属 Token"></label><button class="primary">打开收件箱 <span>→</span></button><div class="privacy-note"><span>✦</span><span>邮件仅以纯文本展示，不加载外部图片或脚本。</span></div></form><section id="mailbox" hidden><div class="mail-toolbar"><div><span class="badge badge-live">永久授权</span><span class="muted" id="mailbox-hint">仅展示本次授权范围内的邮件</span></div><div class="mail-actions"><div class="sync-control compact"><span class="sync-dot"></span><span class="sync-label">自动刷新</span><label class="switch"><input id="auto-refresh" type="checkbox"><span></span></label><select id="refresh-interval" aria-label="自动刷新间隔" disabled><option value="30">30 秒</option><option value="60">1 分钟</option><option value="300">5 分钟</option></select></div><button id="refresh" class="button-accent">↻ 立即刷新</button></div></div><div id="messages"></div></section><footer class="inbox-footer"><span>MAIL DESK</span><span>安全 · 简洁 · 可控</span></footer></main><div id="busy-layer" class="busy-layer" hidden role="status" aria-live="polite"><span class="busy-spinner"></span><span>正在处理，请稍候…</span></div></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#f5f7f9">
+  <meta name="color-scheme" content="light">
+  <title>专属收件箱</title>
+  <link rel="stylesheet" href="/ui/site.css">
+  <script type="module" src="/ui/inbox.js"></script>
+</head>
+<body class="inbox-page">
+  <a class="skip-link" href="#main-content">跳转到收件内容</a>
+  <main class="inbox-main" id="main-content" tabindex="-1">
+    <header class="inbox-top">
+      <div class="brand-mark"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg></span><div><strong>收件台</strong><span>MAIL DESK</span></div></div>
+      <div class="inbox-top-status"><span class="private-label">单邮箱访问</span><button id="logout" type="button" hidden>退出收件箱</button></div>
+    </header>
+    <section class="inbox-hero">
+      <p class="eyebrow">一个地址，一处收件。</p><h1>专属收件箱</h1><p class="muted" id="inbox-description">使用专属 Token，查看分发给你的邮箱和来信。</p>
+    </section>
+    <p id="notice" role="status" aria-live="polite"></p>
+    <section id="mailbox-identity-panel" class="mailbox-panel" hidden aria-label="当前邮箱">
+      <span class="identity-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg></span>
+      <div class="identity-content"><p class="identity-caption">当前邮箱地址</p><div id="mailbox-name" class="mailbox-identity"></div></div>
+    </section>
+    <form id="login-form" class="card inbox-login">
+      <p class="login-kicker">收件入口</p><h2>打开你的邮箱</h2><p class="muted">粘贴管理员给你的 Token，即可查看对应来信。</p>
+      <label>收件 Token<input name="token" type="password" autocomplete="off" spellcheck="false" required placeholder="粘贴专属 Token"></label>
+      <button class="primary" type="submit">进入收件箱</button>
+      <div class="privacy-note">授权默认永久有效，管理员可撤销或重置。<br>请妥善保管 Token，不要公开分享。</div>
+    </form>
+    <section id="mailbox" hidden aria-label="邮件列表">
+      <div class="mail-toolbar">
+        <div class="mail-toolbar-title"><h2>邮件</h2><span class="badge badge-live">永久授权</span><span class="muted" id="mailbox-hint">手动刷新 · 仅展示授权范围内的邮件</span></div>
+        <div class="mail-actions">
+          <div class="sync-control compact"><span class="sync-dot" aria-hidden="true"></span><span class="sync-label" id="auto-refresh-label">自动刷新</span><label class="switch"><input id="auto-refresh" type="checkbox" aria-labelledby="auto-refresh-label"><span aria-hidden="true"></span></label><select id="refresh-interval" aria-label="自动刷新间隔" disabled><option value="30">30 秒</option><option value="60">1 分钟</option><option value="300">5 分钟</option></select></div>
+          <button id="refresh" type="button" class="button-accent">立即刷新</button>
+        </div>
+      </div>
+      <div id="messages"></div>
+    </section>
+    <footer class="inbox-footer"><span>MAIL DESK</span><span>纯文本阅读 · 不加载邮件外部图片</span></footer>
+  </main>
+  <div id="busy-layer" class="busy-layer" hidden role="status" aria-live="polite"><div class="busy-card"><span class="busy-spinner" aria-hidden="true"></span><span>正在处理，请稍候…</span></div></div>
+</body>
+</html>

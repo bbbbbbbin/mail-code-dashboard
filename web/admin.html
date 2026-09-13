@@ -1,10 +1,89 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101c27"><title>收件台 · 管理</title><link rel="stylesheet" href="/ui/site.css"><script type="module" src="/ui/admin.js"></script></head>
-<body><div class="shell">
-  <aside class="sidebar"><div class="brand-mark"><span class="brand-symbol">✳</span><div><strong>收件台</strong><span>MAIL DESK / SERVER</span></div></div><div class="side-label">工作区</div><nav aria-label="管理导航"><button data-view="inventory" class="nav active">邮箱总览</button><button data-view="accounts" class="nav">iCloud 账号</button><button data-view="grants" class="nav">永久分发</button><button data-view="keys" class="nav">接口密钥</button><button data-view="audit" class="nav">操作记录</button></nav><div class="side-foot"><div class="security-badge"><span>●</span><div><strong>安全连接</strong><small>数据仅保存在你的服务器</small></div></div><p>账号独立 · 权限分离<br>收件授权默认永久有效</p><button id="logout" class="quiet">退出登录 <span>↗</span></button></div></aside>
-  <main><header class="topbar"><div class="page-heading"><p class="eyebrow">CONTROL ROOM / 01</p><h1 id="heading">邮箱总览</h1><p class="muted">一个后台查看全部账号，每个邮箱始终保留清晰归属。</p></div><div class="top-actions"><div class="sync-control" title="默认关闭，避免页面自动发起请求"><span class="sync-dot"></span><div><span class="sync-label">自动刷新</span><small id="refresh-state">已关闭 · 手动刷新</small></div><label class="switch"><input id="auto-refresh" type="checkbox"><span></span></label><select id="refresh-interval" aria-label="自动刷新间隔" disabled><option value="30">30 秒</option><option value="60">1 分钟</option><option value="300">5 分钟</option></select></div><button id="scan-mail" class="button-accent">扫描全部收件</button><button id="refresh" class="button-quiet">刷新状态</button></div></header><p id="notice" role="status" aria-live="polite"></p>
-    <section id="login" class="login card"><div class="login-kicker">ADMIN ACCESS</div><h2>登录管理后台</h2><p class="muted">仅管理员可管理账号与分发。登录会话在 12 小时后过期。</p><form id="login-form"><label>管理员名称<input name="username" autocomplete="username" required placeholder="输入管理员名称"></label><label>密码<input name="password" type="password" autocomplete="current-password" required placeholder="输入管理员密码"></label><button class="primary">进入控制室 <span>→</span></button></form></section>
-    <div id="workspace" hidden><section id="stats" class="stats"></section><div class="toolbar toolbar-main"><div class="toolbar-title"><span class="section-kicker">INVENTORY</span><strong>邮箱库</strong></div><label>账号<select id="account-filter"><option value="">全部账号</option></select></label><label class="search-field"><span>⌕</span><input id="search" placeholder="搜索邮箱、标签或分发对象"></label><label>分发状态<select id="status-filter"><option value="">全部状态</option><option value="unassigned">未分发</option><option value="active">已分发</option><option value="revoked">已撤销</option></select></label><button id="distribute-selected" class="primary">分发选中邮箱</button><button id="add-account" class="button-quiet">＋ 新增账号</button></div><section id="content"></section></div>
-  </main>
-</div><div id="busy-layer" class="busy-layer" hidden role="status" aria-live="polite"><span class="busy-spinner"></span><span>正在处理，请稍候…</span></div><dialog id="dialog"><form id="dialog-form"><div class="dialog-head"><div><p class="section-kicker">ACTION</p><h2 id="dialog-title"></h2></div><button type="button" id="dialog-close" class="close-button" aria-label="关闭">×</button></div><div id="dialog-body"></div><p id="dialog-error" role="alert"></p><button id="dialog-submit" class="primary">确认提交 <span>→</span></button></form></dialog></body></html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f7f9">
+  <meta name="color-scheme" content="light">
+  <title>收件台 · 管理</title>
+  <link rel="stylesheet" href="/ui/site.css">
+  <script type="module" src="/ui/admin.js"></script>
+</head>
+<body class="admin-page">
+  <a class="skip-link" href="#main-content">跳转到主要内容</a>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand-mark">
+        <span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg></span>
+        <div><strong>收件台</strong><span>MAIL DESK</span></div>
+      </div>
+      <div class="side-label">工作空间</div>
+      <nav aria-label="管理导航">
+        <button type="button" data-view="inventory" class="nav active" aria-current="page">邮箱总览</button>
+        <button type="button" data-view="accounts" class="nav">iCloud 账号</button>
+        <button type="button" data-view="grants" class="nav">永久分发</button>
+        <button type="button" data-view="keys" class="nav">接口密钥</button>
+        <button type="button" data-view="audit" class="nav">操作记录</button>
+      </nav>
+      <div class="side-foot">
+        <div class="security-badge"><span class="status-led" aria-hidden="true"></span><div><strong>独立账号，清晰归属</strong><small>管理、同步与收件权限分离</small></div></div>
+        <p>每个邮箱，都有自己的位置。</p>
+        <button type="button" id="logout" class="quiet">退出登录</button>
+      </div>
+    </aside>
+    <main id="main-content" tabindex="-1">
+      <header class="topbar">
+        <div class="page-heading"><p class="eyebrow">工作空间 / 邮箱管理</p><h1 id="heading">邮箱总览</h1><p class="muted" id="page-description">查找邮箱、查看来信，再将需要的地址分发出去。</p></div>
+        <div id="admin-tools" class="top-actions" hidden>
+          <div class="sync-control">
+            <span class="sync-dot" aria-hidden="true"></span>
+            <div><span class="sync-label" id="auto-refresh-label">自动刷新</span><small id="refresh-state">已关闭 · 手动刷新</small></div>
+            <label class="switch"><input id="auto-refresh" type="checkbox" aria-labelledby="auto-refresh-label"><span aria-hidden="true"></span></label>
+            <select id="refresh-interval" aria-label="自动刷新间隔" disabled><option value="30">30 秒</option><option value="60">1 分钟</option><option value="300">5 分钟</option></select>
+          </div>
+          <div class="header-buttons"><button id="refresh" type="button">刷新状态</button><button id="scan-mail" type="button" class="button-accent">扫描全部收件</button></div>
+        </div>
+      </header>
+      <p id="notice" role="status" aria-live="polite"></p>
+      <section id="login" class="auth-layout" aria-label="管理员登录">
+        <div class="auth-intro">
+          <p class="eyebrow">给邮箱管理，留一点秩序。</p>
+          <h1>所有邮箱，<br>一目了然。</h1>
+          <p>账号、来信、分发状态各就各位。<br>从这里开始，专注处理真正重要的邮件。</p>
+          <ol class="auth-features"><li><span>01</span>独立管理每个 iCloud 账号</li><li><span>02</span>按邮箱查看邮件与验证码</li><li><span>03</span>主动分发，随时管理收件授权</li></ol>
+        </div>
+        <div class="login card">
+          <p class="login-kicker">管理入口</p><h2>欢迎回来</h2><p class="muted">登录后，继续管理你的邮箱工作区。</p>
+          <form id="login-form">
+            <label>管理员名称<input name="username" autocomplete="username" required placeholder="输入管理员名称"></label>
+            <label>密码<input name="password" type="password" autocomplete="current-password" required placeholder="输入管理员密码"></label>
+            <button class="primary" type="submit">登录管理后台</button>
+          </form>
+          <p class="form-footnote">会话有效期为 12 小时，退出后可重新登录。</p>
+        </div>
+      </section>
+      <div id="workspace" hidden>
+        <section id="stats" class="stats" aria-label="邮箱统计"></section>
+        <div class="toolbar toolbar-main">
+          <div class="toolbar-title"><span class="section-kicker">当前视图</span><strong id="section-title">邮箱库</strong></div>
+          <div class="filter-fields">
+            <label>所属账号<select id="account-filter"><option value="">全部账号</option></select></label>
+            <label class="search-field">搜索邮箱<input id="search" type="search" placeholder="邮箱、标签或分发对象"></label>
+            <label>分发状态<select id="status-filter"><option value="">全部状态</option><option value="unassigned">未分发</option><option value="active">已分发</option><option value="revoked">已撤销</option></select></label>
+          </div>
+          <div class="toolbar-buttons"><button id="add-account" type="button">新增账号</button><button id="distribute-selected" class="primary" type="button">分发选中邮箱</button></div>
+        </div>
+        <section id="content" aria-label="当前页面内容"></section>
+      </div>
+    </main>
+  </div>
+  <div id="busy-layer" class="busy-layer" hidden role="status" aria-live="polite"><div class="busy-card"><span class="busy-spinner" aria-hidden="true"></span><span>正在处理，请稍候…</span></div></div>
+  <dialog id="dialog" aria-labelledby="dialog-title">
+    <form id="dialog-form">
+      <div class="dialog-head"><div><p class="section-kicker">邮箱工作区</p><h2 id="dialog-title"></h2></div><button type="button" id="dialog-close" class="close-button" aria-label="关闭对话框">×</button></div>
+      <div id="dialog-body"></div><p id="dialog-error" role="alert"></p>
+      <div class="dialog-footer"><button type="button" id="dialog-cancel">取消</button><button id="dialog-submit" class="primary" type="submit">确认提交</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
