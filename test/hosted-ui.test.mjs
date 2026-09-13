@@ -62,6 +62,8 @@ test('distribute requires submit; token result remains open after asynchronous c
 test('revoke response objects do not get invoked as callbacks; scanning is wired to the server', async t => {
   const u = await ui(t);
   u.click('永久分发'); await u.settle();
+  assert.equal(u.$('[data-view=grants]').getAttribute('aria-current'), 'page');
+  assert.equal(u.$('[data-view=inventory]').hasAttribute('aria-current'), false);
   u.click('撤销');
   u.$('#dialog-form').dispatchEvent(new u.w.Event('submit', { cancelable: true }));
   await u.settle();

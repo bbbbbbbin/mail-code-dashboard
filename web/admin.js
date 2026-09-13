@@ -78,6 +78,9 @@ function actions(...items) { const box = el('div', undefined, 'actions'); box.ap
 function grantActions(g) { return actions(button('重置 Token', () => openDialog('重置原使用者的 Token', [el('p', `邮箱：${g.email}。旧 Token 与旧会话立即失效；原分发对象和邮件起始范围保持不变。`)], async () => { const result = await write(`/admin-api/grants/${g.id}/reset`); return () => secretDialog('新的收件 Token', { email: result.email, token: result.token }); })), ...(g.status === 'active' ? [button('撤销', () => openDialog('撤销收件授权', [el('p', `${g.email} 将停止对原 Token 提供收件。邮箱不删除，也不自动重新分发。`)], () => write(`/admin-api/grants/${g.id}/revoke`)))] : [])); }
 async function render() {
   const content = $('#content'); content.replaceChildren();
+  for (const item of document.querySelectorAll('[data-view]')) {
+    if (item.dataset.view === view) item.setAttribute('aria-current', 'page'); else item.removeAttribute('aria-current');
+  }
   $('#stats').hidden = view !== 'inventory';
   const descriptions = { inventory: ['邮箱库', '查找邮箱、复制地址，并为使用者分发独立收件权限。'], accounts: ['账号管理', '分别管理每个 iCloud 账号的同步、转发收件与后台生成。'], grants: ['收件授权', '查看分发对象与访问记录，按需重置或撤销收件 Token。'], keys: ['密钥与安全', '按账号管理程序和同步密钥，完整密钥仅在创建时显示。'], audit: ['活动记录', '追踪账号、邮箱与授权的操作记录，快速核对变更。'] };
   if ($('#section-title')) $('#section-title').textContent = descriptions[view][0];
