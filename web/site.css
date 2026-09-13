@@ -65,6 +65,11 @@ svg { display: block; width: 24px; height: 24px; stroke: currentColor; stroke-wi
 .shell { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: 100vh; }
 .sidebar { position: sticky; top: 0; height: 100vh; min-width: 0; display: flex; flex-direction: column; padding: 28px 16px 20px; background: var(--sidebar); border-right: 1px solid var(--line); }
 .brand-mark { display: flex; align-items: center; gap: 12px; }
+.brand-logo { display: block; width: 40px; height: 40px; flex: 0 0 40px; }
+.brand-welcome { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+.brand-welcome img { display: block; flex: 0 0 64px; }
+.brand-welcome > span { font-size: 24px; font-weight: 600; color: var(--ink); }
+.brand-welcome > span > span { display: block; color: var(--muted); font-size: 16px; font-weight: 400; }
 .sidebar .brand-mark { padding: 0 8px; }
 .brand-symbol { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; color: var(--accent); background: var(--accent-soft); border: 1px solid #c2dfd9; }
 .brand-mark strong { display: block; font-size: 20px; font-weight: 600; line-height: 1.4; }
@@ -266,6 +271,8 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
   .sidebar .brand-mark { padding: 0; }
   .brand-mark strong { font-size: 18px; }
   .brand-symbol { width: 36px; height: 36px; flex-basis: 36px; border-radius: 10px; }
+  .brand-logo { width: 36px; height: 36px; flex-basis: 36px; }
+  .brand-welcome { margin-bottom: 24px; }
   .side-label, .security-badge, .side-foot > p { display: none; }
   .side-foot { padding: 0; margin: 0; position: absolute; right: 12px; top: 13px; }
   .sidebar .quiet { font-size: 12px; }

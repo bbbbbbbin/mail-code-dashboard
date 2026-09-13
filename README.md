@@ -1,6 +1,8 @@
-# Mail Code Dashboard
+<img src="web/brand/logo.svg" alt="信屿 MailIsle 标识" width="88" height="88">
 
-一个支持多 iCloud 账号的隐藏邮箱管理与收件平台，提供统一管理后台、后台生成任务、单邮箱访问授权和 Chrome Cookie 同步扩展。
+# 信屿 MailIsle
+
+信屿 MailIsle 是面向多 iCloud 账号的隐藏邮箱管理与收件平台。集中管理邮箱、阅读转发来信与验证码，并通过可设有效天数的链接分享单个收件箱。
 
 ## 功能
 
@@ -78,7 +80,8 @@ cp deploy/env.example .env
 - [Chrome 扩展安装与配置](extensions/chrome-cookie-bridge/README.md)
 - [API 参考](docs/api.md)
 - [开发与测试](docs/testing.md)
-- [设计系统](docs/design-system.md)
+- [界面与品牌设计](docs/interface-design.md)
+- [单机入口设计系统](docs/design-system.md)
 
 ## 运行模式
 
@@ -93,7 +96,7 @@ cp deploy/env.example .env
 - 管理员密码使用密码哈希；访问 Token 只持久化摘要，完整 Token 仅在创建或重置时返回。
 - 分享有效期从创建时起算，一天为 24 小时，由服务器校验；到期后，原链接与已登录会话均停止取信。已有永久分享保持不变。
 - 浏览器登录会话最长 12 小时；会话失效后，可重新打开仍在有效期内的原始分享链接。
-- 链接包含收件凭证，请只交给预期使用者。凭证放在 `#token=TOKEN` 片段，页面取出后移除该片段；不将它放入请求网址或浏览器本地存储。聊天记录与浏览器扩展仍可能看到你分享的完整链接。
+- 链接包含收件凭证，请只交给预期使用者。凭证放在 `#token=TOKEN` 片段，页面取出后移除该片段；不将它放入请求网址或浏览器持久化存储。聊天记录与浏览器扩展仍可能看到你分享的完整链接。
 - 完整链接只在创建或重置时显示；丢失后重置链接会让旧链接失效。调整有效期不更换 Token，但旧会话需重新打开原链接登录。
 - 分发默认不开放此前邮件，不自动回收或再次分发已分发地址。
 - 收件页展示纯文本，不加载邮件内的脚本或远程跟踪图片。

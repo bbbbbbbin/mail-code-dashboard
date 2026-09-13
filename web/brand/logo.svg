@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title desc">
+  <title id="title">信屿 MailIsle</title>
+  <desc id="desc">折叠信封形成独立岛屿，下方水纹象征有序流转的邮件。</desc>
+  <rect x="0" y="0" width="64" height="64" rx="18" fill="#086f69"/>
+  <path d="M13 22L32 34L51 22V40H13Z" fill="#ffffff"/>
+  <path d="M15 18H49L32 29Z" fill="#c8f2e6"/>
+  <path d="M13 45C20 41 25 49 32 45S44 41 51 45" fill="none" stroke="#8fe0c9" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

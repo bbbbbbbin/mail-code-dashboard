@@ -1,15 +1,17 @@
-# Mail Code Dashboard · 设计系统 v1
+# 信屿 MailIsle · 单机入口设计系统
+
+本文记录 `server.mjs` 与 `mail-code-dashboard.html` 使用的既有组件及兼容约定。当前多账号管理后台、收件页及品牌展示遵循 [界面与品牌设计约定](interface-design.md)，固定采用浅色主题；本文中的主题切换和暗色令牌仅适用于单机入口，不用于服务器页面。
 
 ## 交付物
 
 | 文件 | 作用 |
 | --- | --- |
-| `mail-code-dashboard/assets/design-system.css` | 令牌 + 基础样式 + 通用组件，全站视觉的唯一来源 |
+| `mail-code-dashboard/assets/design-system.css` | 单机入口的令牌 + 基础样式 + 通用组件 |
 | `mail-code-dashboard/assets/design-system.js` | 视觉状态的行为：主题、忙态、通知、对话框、菜单定位、相对时间 |
 | `mail-code-dashboard/design-system.html` | 活样式指南，`/design-system.html` 可访问，改完在这里肉眼验收 |
 | `mail-code-dashboard/test/design-system.test.mjs` | 令牌漂移与结构守卫 |
 
-新页面的开头永远是这三行：
+使用这套既有组件的单机页面以这三行引入：
 
 ```html
 <html lang="zh-CN" data-theme="auto">

@@ -1,4 +1,4 @@
-# Mail Code Dashboard API
+# 信屿 MailIsle API
 
 本文描述单机模式 API。服务器模式的权限与接口见 [服务器部署指南](server-deployment.md)。`PORT` 为服务配置的监听端口。
 
@@ -31,7 +31,7 @@ X-API-Key: TOKEN
 
 ## 后台自动生成
 
-所有接口均要求 `X-API-Key`。任务由本机服务执行，关闭浏览器页面不影响计划。
+所有接口均要求 `X-API-Key`。任务由服务进程执行，关闭浏览器页面不影响计划。
 
 - `GET /v1/auto-stock` 返回 `configured`、`enabled`、`prefix`、`running`、`total`、
   `targetTotal`、`batchSize`、`intervalMs`、`lastGeneratedAt`、`nextAttemptAt`、`failureCount`、`lastError`、`pausedReason`。
@@ -194,7 +194,7 @@ curl -X POST http://127.0.0.1:PORT/v1/inventory/check-unused-mail \
 
 拉取 Apple 隐藏邮箱列表并合并进库存，返回 `{ summary, inventory, claims }`。
 
-新地址以 `unused` 写入。Apple 列表标签会同时写入 `label` 与 `appleLabel`，已存在地址也会收敛到官方标签；官方标签为空时保持为空，不生成本地 `hme-*` 兜底。同步仍不会覆盖分组、备注、领取状态或邮件状态，也不会自动删除本地独有地址。需要本地 iCloud 登录态（`runtime/cookies.txt`），拉取失败时整批不落盘。
+新地址以 `unused` 写入。Apple 列表标签会同时写入 `label` 与 `appleLabel`，已存在地址也会收敛到官方标签；官方标签为空时保持为空，不生成 `hme-*` 兜底标签。同步仍不会覆盖分组、备注、领取状态或邮件状态，也不会自动删除仅存在于库存中的地址。需要有效的 iCloud 登录态（`runtime/cookies.txt`），拉取失败时整批不落盘。
 
 ## 领取
 

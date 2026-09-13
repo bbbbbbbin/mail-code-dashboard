@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "iCloud Cookie Bridge for Chrome",
+  "name": "信屿 MailIsle · iCloud 同步助手",
   "version": "1.3.0",
-  "description": "Send this Chrome profile's iCloud session cookies to its local mail dashboard.",
+  "description": "将当前 Chrome 配置文件的 iCloud 会话同步至信屿 MailIsle，支持独立账号绑定。",
   "minimum_chrome_version": "96",
   "permissions": ["cookies", "alarms", "storage"],
   "optional_host_permissions": ["https://*/*"],

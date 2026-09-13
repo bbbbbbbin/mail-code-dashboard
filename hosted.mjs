@@ -1,12 +1,22 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
+import { resolve, join, extname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { HostedState, readMasterKey, passwordMatches, passwordHash, newToken, digest, fail, publicAccount, publicGrant, audit, iso } from './lib/hosted/state.mjs';
 import { HostedPlatform } from './lib/hosted/platform.mjs';
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const SESSION_MS = 12 * 3600000;
-const ASSETS = new Map([['/', 'admin.html'], ['/admin', 'admin.html'], ['/inbox', 'inbox.html'], ['/ui/admin.js', 'admin.js'], ['/ui/inbox.js', 'inbox.js'], ['/ui/shared.js', 'shared.js'], ['/ui/site.css', 'site.css']]);
+const ASSETS = new Map([
+  ['/', 'admin.html'], ['/admin', 'admin.html'], ['/inbox', 'inbox.html'],
+  ['/ui/admin.js', 'admin.js'], ['/ui/inbox.js', 'inbox.js'], ['/ui/shared.js', 'shared.js'], ['/ui/site.css', 'site.css'],
+  ['/ui/brand/logo.svg', 'brand/logo.svg'], ['/ui/brand/icon-32.png', 'brand/icon-32.png'],
+  ['/ui/brand/apple-touch-icon.png', 'brand/apple-touch-icon.png'],
+  ['/ui/brand/favicon.ico', 'brand/favicon.ico'], ['/favicon.ico', 'brand/favicon.ico'],
+]);
+const CONTENT_TYPES = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon',
+};
 
 async function body(req) {
   if (!String(req.headers['content-type'] || '').startsWith('application/json')) fail(415, 'JSON_REQUIRED');
@@ -170,7 +180,7 @@ export function createHostedServer({ platform, adminOrigin, mailOrigin = adminOr
       const file = ASSETS.get(path);
       if (file === 'admin.html' && req.headers.host !== adminURL.host) fail(404, 'NOT_FOUND');
       if (file === 'inbox.html' && req.headers.host !== mailURL.host) fail(404, 'NOT_FOUND');
-      res.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript; charset=utf-8' : file.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/html; charset=utf-8');
+      res.setHeader('Content-Type', CONTENT_TYPES[extname(file)]);
       res.end(await readFile(join(ROOT, 'web', file)));
     } catch (e) {
       // Never forward upstream response/error text: it can contain cookies, IMAP secrets or mail.

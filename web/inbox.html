@@ -7,7 +7,13 @@
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#f5f7f9">
   <meta name="color-scheme" content="light">
-  <title>专属收件箱</title>
+  <meta name="description" content="信屿 MailIsle：打开专属链接，读取邮件与验证码。">
+  <meta name="application-name" content="信屿 MailIsle">
+  <title>信屿 MailIsle · 专属收件箱</title>
+  <link rel="icon" href="/ui/brand/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="/ui/brand/logo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/ui/brand/icon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/ui/brand/apple-touch-icon.png">
   <link rel="stylesheet" href="/ui/site.css">
   <script type="module" src="/ui/inbox.js"></script>
 </head>
@@ -15,7 +21,7 @@
   <a class="skip-link" href="#main-content">跳转到收件内容</a>
   <main class="inbox-main" id="main-content" tabindex="-1">
     <header class="inbox-top">
-      <div class="brand-mark"><span class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg></span><div><strong>收件台</strong><span>MAIL DESK</span></div></div>
+      <div class="brand-mark"><img class="brand-logo" src="/ui/brand/logo.svg" width="40" height="40" alt="信屿 MailIsle Logo"><div><strong>信屿</strong><span translate="no">MailIsle</span></div></div>
       <div class="inbox-top-status"><span class="private-label">单邮箱访问</span><button id="logout" type="button" hidden>退出收件箱</button></div>
     </header>
     <section class="inbox-hero">
@@ -42,7 +48,7 @@
       </div>
       <div id="messages"></div>
     </section>
-    <footer class="inbox-footer"><span>MAIL DESK</span><span>纯文本阅读 · 不加载邮件外部图片</span></footer>
+    <footer class="inbox-footer"><span translate="no">MailIsle</span><span>纯文本阅读 · 不加载邮件外部图片</span></footer>
   </main>
   <div id="busy-layer" class="busy-layer" hidden role="status" aria-live="polite"><div class="busy-card"><span class="busy-spinner" aria-hidden="true"></span><span>正在处理，请稍候…</span></div></div>
 </body>

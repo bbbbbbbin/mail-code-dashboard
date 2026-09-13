@@ -1,6 +1,6 @@
-# Chrome iCloud Cookie Bridge
+# 信屿 MailIsle · Chrome Cookie 同步扩展
 
-将当前 Chrome 配置文件中的 iCloud 会话 Cookie 同步到 Mail Code Dashboard。支持 HTTPS 服务器模式与回环地址的单机模式。
+将当前 Chrome 配置文件中的 iCloud 会话 Cookie 同步到信屿 MailIsle。支持 HTTPS 服务器模式与回环地址的单机模式。
 
 ## 安装
 

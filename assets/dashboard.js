@@ -660,8 +660,8 @@ function render() {
   if (els.claimHistoryPanel?.open) renderClaimHistory();
 
   document.title = counts.unread
-    ? `(${counts.unread}) iCloud 隐藏邮箱收件台`
-    : "iCloud 隐藏邮箱收件台";
+    ? `(${counts.unread}) 信屿 MailIsle`
+    : "信屿 MailIsle";
 }
 
 function highlightInto(node, value, keyword) {

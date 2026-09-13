@@ -1,5 +1,6 @@
 {
-  "name": "mail-code-dashboard",
+  "name": "mailisle",
+  "description": "Multi-account iCloud mailbox management, private inboxes, and expiring share links.",
   "version": "1.0.0",
   "private": true,
   "type": "module",

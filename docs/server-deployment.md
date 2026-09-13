@@ -1,4 +1,4 @@
-# Linux / Docker 服务器版
+# 信屿 MailIsle · Linux / Docker 部署
 
 服务器入口是 `hosted.mjs`，单机入口 `server.mjs` 仅用于回环地址访问。服务器需要可正常访问 iCloud 和 IMAP 的网络。
 
@@ -16,7 +16,7 @@
 
 ## 首次部署
 
-准备两个不同域名指向服务器：一个管理员域名、一个收件域名。防火墙只开放 HTTPS/证书签发所需端口和自己的管理连接；不要开放应用内部端口或把本机 API 直接转发出去。
+准备两个不同域名指向服务器：一个管理员域名、一个收件域名。防火墙只开放 HTTPS/证书签发所需端口和自己的管理连接；不要开放应用内部端口或把单机 API 直接转发出去。
 
 ```sh
 git clone https://github.com/bbbbbbbin/mail-code-dashboard.git
