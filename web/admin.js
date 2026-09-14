@@ -1,5 +1,5 @@
-import { $, api, copyButton, element as el, displayMail, setPagePending } from './shared.js';
-let csrf = '', accounts = [], view = 'inventory', selected = new Map(), dialogAction, refreshTimer = null, busy = false;
+import { $, api, copyButton, element as el, displayMail, setPagePending, actionMenu, bindPopup, closePopups } from './shared.js';
+let csrf = '', accounts = [], view = 'inventory', selected = new Map(), dialogAction, dialogFocus, refreshTimer = null, busy = false;
 const REFRESH_KEY = 'mail-dashboard-admin-auto-refresh';
 const write = (path, data = {}, method = 'POST') => api(path, { method, data, csrf });
 const accountName = id => accounts.find(a => a.id === id)?.name || id;
@@ -14,7 +14,7 @@ function setBusy(value) { busy = value; setPagePending(value); }
 async function runAction(action) { if (busy) return; setBusy(true); try { return await action(); } finally { setBusy(false); } }
 function button(text, action, cls = '') { const b = el('button', text, cls); b.type = 'button'; b.onclick = async () => { if (busy) return; try { const result = action(); if (result?.then) await runAction(() => result); } catch(e) { $('#notice').textContent = e.message; } }; return b; }
 function field(label, name, type = 'text', value = '', required = true) { const l = el('label', label), input = el('input'); Object.assign(input, { name, type, value, required }); if (type === 'password') input.autocomplete = 'new-password'; l.append(input); return l; }
-function openDialog(title, nodes, action) { $('#dialog-title').textContent = title; $('#dialog-body').replaceChildren(...nodes); $('#dialog-error').textContent = ''; $('#dialog-submit').hidden = !action; dialogAction = action; $('#dialog').showModal(); if (busy) setPagePending(true); }
+function openDialog(title, nodes, action) { closePopups(); if (!$('#dialog').open && !busy) dialogFocus = document.activeElement; $('#dialog-title').textContent = title; $('#dialog-body').replaceChildren(...nodes); $('#dialog-error').textContent = ''; $('#dialog-submit').hidden = !action; dialogAction = action; $('#dialog').showModal(); if (busy) setPagePending(true); }
 function secretDialog(title, data) {
   const payload = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   const area = el('textarea'); area.value = payload; area.readOnly = true; area.rows = 10;
@@ -64,7 +64,7 @@ function closeDialog() { if (!busy) $('#dialog').close(); }
 $('#dialog-close').onclick = closeDialog;
 if ($('#dialog-cancel')) $('#dialog-cancel').onclick = closeDialog;
 $('#dialog').addEventListener('cancel', event => { if (busy) event.preventDefault(); });
-$('#dialog').addEventListener('close', () => { if (!$('#dialog').open) { $('#dialog-body').replaceChildren(); dialogAction = null; } });
+$('#dialog').addEventListener('close', () => { if (!$('#dialog').open) { $('#dialog-body').replaceChildren(); dialogAction = null; const target = dialogFocus?.isConnected && !dialogFocus.disabled && !dialogFocus.closest('[hidden]') ? dialogFocus : document.querySelector('[data-view][aria-current="page"]'); target?.focus({ preventScroll: true }); dialogFocus = null; } });
 $('#dialog-form').onsubmit = async e => {
   e.preventDefault(); if (busy || typeof dialogAction !== 'function') return;
   const data = Object.fromEntries(new FormData(e.currentTarget)), action = dialogAction;
@@ -76,7 +76,7 @@ function setAuthenticated(value) {
   document.body.classList.toggle('is-authenticated', value);
   $('#login').hidden = value; $('#workspace').hidden = !value; $('#logout').hidden = !value;
   if ($('#admin-tools')) $('#admin-tools').hidden = !value;
-  if (!value) { csrf = ''; clearInterval(refreshTimer); refreshTimer = null; }
+  if (!value) { closePopups(); csrf = ''; clearInterval(refreshTimer); refreshTimer = null; }
 }
 async function refresh() {
   const wasAuthenticated = document.body.classList.contains('is-authenticated');
@@ -118,16 +118,15 @@ function saveRefreshSettings() {
 }
 function table(headers, rows) { const wrap = el('div', undefined, 'table-wrap card'), t = el('table'), head = el('thead'), hr = el('tr'); headers.forEach(h => hr.append(el('th', h))); head.append(hr); t.append(head); const body = el('tbody'); rows.forEach(cells => { const row = el('tr'); cells.forEach(v => { const cell = el('td'); cell.append(v instanceof Node ? v : document.createTextNode(String(v ?? ''))); row.append(cell); }); body.append(row); }); t.append(body); wrap.append(t); if (!rows.length) wrap.append(el('p', '暂无记录', 'empty')); return wrap; }
 function actions(...items) { const box = el('div', undefined, 'actions'); box.append(...items); return box; }
-function grantActions(g, ...leadingButtons) {
-  const box = actions(
-    ...leadingButtons,
-    button('重新生成链接', () => openDialog('重新生成原使用者的分享链接', [el('p', `邮箱：${g.email}。旧链接、旧 Token 与旧会话立即失效。原使用者和邮件起始范围保持不变。`, 'warning'), el('p', `${expiryLabel(g)}。此操作不会延长有效期${g.status === 'revoked' ? '，确认后会恢复原使用者的授权' : ''}；到期链接请先调整有效期。`)], async () => { const result = await write(`/admin-api/grants/${g.id}/reset`); return () => shareDialog('新的分享链接 · 请重新发送', [result], result.inboxUrl); })),
-    button('调整有效期', () => openDialog('调整原分享的有效期', [el('p', `邮箱：${g.email} · ${expiryLabel(g)}`), el('p', '新的有效期从本次确认起计算，原链接与使用者不变；已打开的会话需重新通过原链接进入。已撤销的分享仍保持撤销。', 'muted'), ...durationFields()], b => write(`/admin-api/grants/${g.id}`, { durationDays: durationFromForm(b) }, 'PATCH'))),
-    ...(['active', 'expired'].includes(grantStatus(g)) ? [button('撤销', () => openDialog('撤销收件分享', [el('p', `${g.email} 将停止对原链接与 Token 提供收件。邮箱不删除，也不自动重新分发。`)], () => write(`/admin-api/grants/${g.id}/revoke`)))] : [])
-  );
+function grantActions(g, readMail) {
+  const reset = button('重新生成链接', () => openDialog('重新生成原使用者的分享链接', [el('p', `邮箱：${g.email}。旧链接、旧 Token 与旧会话立即失效。原使用者和邮件起始范围保持不变。`, 'warning'), el('p', `${expiryLabel(g)}。此操作不会延长有效期${g.status === 'revoked' ? '，确认后会恢复原使用者的授权' : ''}；到期链接请先调整有效期。`)], async () => { const result = await write(`/admin-api/grants/${g.id}/reset`); return () => shareDialog('新的分享链接 · 请重新发送', [result], result.inboxUrl); }));
+  const renew = button('调整有效期', () => openDialog('调整原分享的有效期', [el('p', `邮箱：${g.email} · ${expiryLabel(g)}`), el('p', '新的有效期从本次确认起计算，原链接与使用者不变；已打开的会话需重新通过原链接进入。已撤销的分享仍保持撤销。', 'muted'), ...durationFields()], b => write(`/admin-api/grants/${g.id}`, { durationDays: durationFromForm(b) }, 'PATCH')));
+  const revoke = ['active', 'expired'].includes(grantStatus(g)) ? [button('撤销', () => openDialog('撤销收件分享', [el('p', `${g.email} 将停止对原链接与 Token 提供收件。邮箱不删除，也不自动重新分发。`)], () => write(`/admin-api/grants/${g.id}/revoke`)))] : [];
+  const box = actions(readMail || renew, actionMenu('更多', [reset, ...(readMail ? [renew] : []), ...revoke], `${g.email} 的更多分享操作`));
   box.classList.add('grant-actions', 'row-actions'); return box;
 }
 async function render() {
+  closePopups();
   const content = $('#content'); content.replaceChildren();
   for (const item of document.querySelectorAll('[data-view]')) {
     if (item.dataset.view === view) item.setAttribute('aria-current', 'page'); else item.removeAttribute('aria-current');
@@ -162,11 +161,9 @@ async function render() {
     for (const a of accounts.filter(a => !chosen || a.id === chosen)) {
       const card = el('section', undefined, `card account ${accountTone(a.id)}`); card.append(el('h2', a.name), el('p', a.expectedAppleId, 'muted'), el('p', `${a.bound ? '已核验绑定' : '待 Chrome 配对'} · ${a.paused ? '已暂停' : '已启用'}`, 'badge'), el('p', `Cookie：${({ verified: '已核验', not_synced: '未同步', verification_failed: '核验失败' })[a.cookieStatus] || a.cookieStatus} · ${date(a.lastSyncedAt)}`), el('p', `转发收件：${a.forwardConfigured ? '已配置' : '待配置'} · 邮箱 ${a.inventory.length} 个`), el('p', `收件扫描：${({ ok: '正常', unavailable: '连接失败，请检查配置', not_checked: '尚未扫描', scan_window_truncated: '已扫描最近邮件，存在更早邮件' })[a.mailStatus] || a.mailStatus} · ${date(a.lastMailScanAt)}`), el('p', `后台生成：${a.autoStock?.enabled ? '开启' : '关闭'} · 下次 ${date(a.autoStock?.nextAttemptAt)}`, 'muted'));
       if (a.autoStock?.pausedReason || a.autoStock?.lastError) card.append(el('p', a.autoStock.pausedReason || a.autoStock.lastError, 'warning'));
-      const primary = actions(button('同步库存', async () => { await write(`/admin-api/accounts/${a.id}/sync`); await refresh(); }, 'primary'), button('手动生成一个', () => openDialog('生成隐藏邮箱', [field('标签（例如 hme-001）', 'label', 'text', `${a.autoStock?.prefix || 'hme'}-001`)], async b => { await write(`/admin-api/accounts/${a.id}/generate`, b); })));
-      primary.classList.add('account-actions');
-      const settings = actions(button('配置转发收件', () => forward(a)), button('自动生成设置', () => auto(a)), button('修改账号名称', () => openDialog('修改显示名称（保持原账号绑定）', [field('账号名称', 'name', 'text', a.name)], async b => { await write(`/admin-api/accounts/${a.id}`, b, 'PATCH'); })), button('创建同步密钥', () => createKey(a, 'upload')), button('手动导入 Cookie', () => manualCookie(a)));
-      settings.classList.add('account-settings');
-      card.append(primary, settings, button(a.paused ? '启用账号' : '暂停账号', async () => { await write(`/admin-api/accounts/${a.id}`, { paused: !a.paused }, 'PATCH'); await refresh(); }, a.paused ? 'button-quiet' : 'danger')); grid.append(card);
+      const more = actionMenu('更多', [button('手动生成一个', () => openDialog('生成隐藏邮箱', [field('标签（例如 hme-001）', 'label', 'text', `${a.autoStock?.prefix || 'hme'}-001`)], async b => { await write(`/admin-api/accounts/${a.id}/generate`, b); })), button('自动生成设置', () => auto(a)), button('修改账号名称', () => openDialog('修改显示名称（保持原账号绑定）', [field('账号名称', 'name', 'text', a.name)], async b => { await write(`/admin-api/accounts/${a.id}`, b, 'PATCH'); })), button('创建同步密钥', () => createKey(a, 'upload')), button('手动导入 Cookie', () => manualCookie(a)), button(a.paused ? '启用账号' : '暂停账号', async () => { await write(`/admin-api/accounts/${a.id}`, { paused: !a.paused }, 'PATCH'); await refresh(); }, a.paused ? 'button-quiet' : 'danger')], `${a.name} 的更多操作`);
+      const primary = actions(button('同步库存', async () => { await write(`/admin-api/accounts/${a.id}/sync`); await refresh(); }, 'primary'), button('收件设置', () => forward(a)), more);
+      primary.classList.add('account-actions'); card.append(primary); grid.append(card);
     }
     content.append(grid); if (!accounts.length) content.append(el('div', '先新增账号，再使用对应 Chrome 扩展配对。账号归属验证通过后，启用账号并配置转发收件。', 'empty'));
   } else if (view === 'grants') {
@@ -174,10 +171,10 @@ async function render() {
     const data = await api('/admin-api/grants'); content.append(table(['邮箱', '所属账号', '分享对象', '状态', '有效期', '最近访问', '操作'], data.grants.filter(g => (!chosen || g.accountId === chosen) && matchesStatus(g, status) && `${g.email} ${g.recipient || ''}`.toLowerCase().includes(q)).map(g => [g.email, accountName(g.accountId), g.recipient, el('span', stateName(g), `badge grant-${grantStatus(g)}`), expiryLabel(g), date(g.lastUsedAt), grantActions(g)])));
   } else if (view === 'keys') {
     content.append(el('p', '程序密钥与 Cookie 同步密钥分别绑定账号；收件链接与 Token 请在“分享管理”管理。', 'muted'));
-    const keyActions = actions(...accounts.filter(a => !chosen || a.id === chosen).map(a => button(`为 ${a.name} 创建程序密钥`, () => createKey(a, 'program'))));
+    const create = button('创建程序密钥', () => createKey(null, 'program')); create.disabled = !accounts.some(a => !chosen || a.id === chosen);
+    const keyActions = actions(create, button('更改管理员密码', () => openDialog('更改密码后需重新登录', [field('当前密码', 'currentPassword', 'password'), field('新密码（至少 14 位）', 'newPassword', 'password')], async b => { await write('/admin-api/password', b); location.reload(); })));
     keyActions.classList.add('key-actions'); content.append(keyActions);
     const data = await api('/admin-api/keys'); content.append(table(['名称', '账号', '权限', '标识', '状态', '最近使用', '操作'], data.keys.filter(k => !chosen || k.accountId === chosen).map(k => [k.name, accountName(k.accountId), k.scopes.join(' / '), k.mask, k.revoked ? '已撤销' : '有效', date(k.lastUsedAt), k.revoked ? '—' : button('撤销', () => openDialog('撤销密钥', [el('p', `${k.name} 将立即停止访问。`)], async () => { await write(`/admin-api/keys/${k.id}/revoke`); }))])));
-    content.append(button('更改管理员密码', () => openDialog('更改密码后需重新登录', [field('当前密码', 'currentPassword', 'password'), field('新密码（至少 14 位）', 'newPassword', 'password')], async b => { await write('/admin-api/password', b); location.reload(); })));
   } else { const data = await api('/admin-api/audit'); content.append(table(['时间', '操作', '账号', '记录编号'], data.events.filter(e => !chosen || e.accountId === chosen).map(e => [date(e.at), e.action, e.accountId ? accountName(e.accountId) : '系统', e.objectId || '—']))); }
   if (busy) setPagePending(true);
 }
@@ -190,10 +187,17 @@ function distribute(rows) {
     selected.clear(); return () => shareDialog('分享完成 · 复制链接发送', result.grants, result.inboxUrl);
   });
 }
-function createKey(a, kind) { openDialog(kind === 'upload' ? '创建账号专属同步密钥' : '创建账号专属程序密钥', [el('p', `仅绑定 ${a.name}（${a.expectedAppleId}）`), field('密钥备注', 'name', 'text', kind === 'upload' ? '我的 Chrome' : '收件脚本')], async b => {
-  const result = await write(`/admin-api/accounts/${a.id}/keys`, { kind, name: b.name, scopes: kind === 'program' ? ['inventory:read', 'mail:read'] : [] });
-  return () => secretDialog('密钥已创建', { server: location.origin, account: a.name, accountId: a.id, token: result.token, scopes: result.scopes });
-}); }
+function createKey(a, kind) {
+  const chosen = $('#account-filter').value, available = accounts.filter(account => !chosen || account.id === chosen);
+  const accountField = el('label', '所属账号'), select = el('select'); select.name = 'accountId'; select.required = true;
+  select.append(new Option('请选择账号', ''), ...available.map(account => new Option(account.name, account.id))); select.value = chosen; accountField.append(select);
+  openDialog(kind === 'upload' ? '创建账号专属同步密钥' : '创建账号专属程序密钥', [a ? el('p', `仅绑定 ${a.name}（${a.expectedAppleId}）`) : accountField, field('密钥备注', 'name', 'text', kind === 'upload' ? '我的 Chrome' : '收件脚本')], async b => {
+    const account = a || available.find(item => item.id === b.accountId);
+    if (!account) throw new Error('请选择要绑定的账号。');
+    const result = await write(`/admin-api/accounts/${account.id}/keys`, { kind, name: b.name, scopes: kind === 'program' ? ['inventory:read', 'mail:read'] : [] });
+    return () => secretDialog('密钥已创建', { server: location.origin, account: account.name, accountId: account.id, token: result.token, scopes: result.scopes });
+  });
+}
 function forward(a) { openDialog(`配置 ${a.name} 的转发收件`, [el('p', '此处填写接收 iCloud 转发邮件的 IMAP 邮箱与应用授权码，非 Apple 登录密码。已有密码留空保持不变；更换主机或邮箱时需填写新授权码。', 'muted'), field('IMAP 主机', 'host', 'text', a.forwardSettings?.host || 'imap.qq.com'), field('TLS 端口', 'port', 'number', String(a.forwardSettings?.port || 993)), field('转发邮箱地址', 'email', 'email', a.forwardSettings?.email || ''), field('应用授权码', 'password', 'password', '', !a.forwardConfigured)], async b => { await write(`/admin-api/accounts/${a.id}`, { forward: { ...b, port: Number(b.port), secure: true } }, 'PATCH'); }); }
 function auto(a) { const enabled = field('开启后台自动生成', 'enabled', 'checkbox', '', false); enabled.querySelector('input').checked = !!a.autoStock?.enabled; openDialog(`${a.name} · 后台生成`, [field('标签前缀', 'prefix', 'text', a.autoStock?.prefix || 'hme'), enabled, el('p', '每小时一批、每批最多 5 个。关闭页面后继续运行；结果不确定时暂停，先同步核对再恢复。', 'muted')], async b => { await write(`/admin-api/accounts/${a.id}/auto-stock`, { prefix: b.prefix, enabled: b.enabled !== undefined }, 'PATCH'); }); }
 function manualCookie(a) { const cookies = el('textarea'); cookies.name = 'cookies'; cookies.rows = 7; cookies.required = true; cookies.placeholder = '[{"name":"X-APPLE-…","value":"…"}]'; openDialog(`手动同步至 ${a.name}`, [el('p', '使用此账号的同步密钥；服务器仍会核验 Apple 身份。不要粘贴其他账号的 Cookie。'), field('此账号同步密钥', 'token', 'password'), cookies], async b => { const r = await fetch('/bridge/v1/sync', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${b.token}` }, body: JSON.stringify({ expectedAccountId: a.id, cookies: JSON.parse(b.cookies) }) }); const result = await r.json(); if (!r.ok) throw new Error(`同步未完成：${result.error}`); if (result.account.id !== a.id) throw new Error('密钥属于其他账号；请核对绑定。'); }); }
@@ -211,5 +215,6 @@ $('#add-account').onclick = () => { if (busy) return; const region = el('label',
 $('#distribute-selected').onclick = () => { if (busy) return; try { distribute([...selected.values()]); } catch(e) { $('#notice').textContent = e.message; } };
 for (const button of document.querySelectorAll('[data-view]')) button.onclick = async () => { if (busy) return; view = button.dataset.view; $('#heading').textContent = button.textContent; document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('active', b === button)); try { await runAction(render); } catch(e) { $('#notice').textContent = e.message; } };
 for (const id of ['#account-filter', '#search', '#status-filter']) $(id).addEventListener('input', () => { if (!busy) void runAction(render).catch(e => { $('#notice').textContent = e.message; }); });
+if ($('#refresh-options') && $('#refresh-panel')) bindPopup($('#refresh-options'), $('#refresh-panel'));
 refreshSettings();
 void runAction(refresh);

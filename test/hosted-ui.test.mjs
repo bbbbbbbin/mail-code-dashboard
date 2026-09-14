@@ -33,7 +33,7 @@ async function ui(t) {
   const settle = () => new Promise(resolve => setTimeout(resolve, 15));
   await settle();
   const $ = selector => w.document.querySelector(selector);
-  const click = text => [...w.document.querySelectorAll('button')].find(b => b.textContent === text).click();
+  const click = text => { const b = [...w.document.querySelectorAll('button')].find(b => b.textContent === text && !b.closest('[hidden]')); assert.ok(b, `visible button ${text}`); b.click(); };
   return { w, $, calls, settle, click };
 }
 
@@ -64,7 +64,7 @@ test('revoke response objects do not get invoked as callbacks; scanning is wired
   u.click('分享管理'); await u.settle();
   assert.equal(u.$('[data-view=grants]').getAttribute('aria-current'), 'page');
   assert.equal(u.$('[data-view=inventory]').hasAttribute('aria-current'), false);
-  u.click('撤销');
+  u.click('更多'); u.click('撤销');
   u.$('#dialog-form').dispatchEvent(new u.w.Event('submit', { cancelable: true }));
   await u.settle();
   assert.equal(u.$('#dialog-error').textContent, '');

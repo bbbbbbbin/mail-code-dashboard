@@ -1,4 +1,4 @@
-import { $, api, copyButton, displayMail, element as el, setPagePending } from './shared.js';
+import { $, api, bindPopup, copyButton, displayMail, element as el, setPagePending } from './shared.js';
 let loading = false, refreshTimer = null, expiryTimer = null, busy = false, needsLogin = false, accessUntil = null, accessVersion = 0, pendingShareLink = null;
 function setBusy(value) { busy = value; setPagePending(value); }
 async function runAction(action) { if (busy) return; setBusy(true); try { return await action(); } finally { setBusy(false); if (pendingShareLink) void runAction(openPendingShare); } }
@@ -113,6 +113,7 @@ $('#login-form').addEventListener('submit', async e => {
   await runAction(() => login(token));
 });
 $('#refresh').onclick = () => { if (!busy) void runAction(refresh); };
+bindPopup($('#refresh-options'), $('#refresh-panel'));
 $('#auto-refresh').onchange = saveRefreshSettings;
 $('#refresh-interval').onchange = saveRefreshSettings;
 $('#logout').onclick = async () => { if (busy) return; try { await runAction(async () => { await api('/mail-api/logout', { method: 'POST', data: {} }); clearMailbox(); $('#notice').textContent = '已退出收件箱。'; }); } catch (e) { $('#notice').textContent = e.message; } };

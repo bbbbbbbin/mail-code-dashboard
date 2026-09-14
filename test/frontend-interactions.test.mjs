@@ -36,7 +36,7 @@ async function ui(t, page = 'admin', { authenticated = true } = {}) {
   vm.runInContext(`${shared}\nconst el = element;\n${script}`, dom.getInternalVMContext());
   await settle();
   const $ = selector => w.document.querySelector(selector);
-  const click = text => [...w.document.querySelectorAll('button')].find(button => button.textContent === text).click();
+  const click = text => { const button = [...w.document.querySelectorAll('button')].find(button => button.textContent === text && !button.closest('[hidden]')); assert.ok(button, `visible button ${text}`); button.click(); };
   const submit = selector => $(selector).dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   return { w, $, calls, timers, routes, accounts, click, submit, evaluate: source => vm.runInContext(source, dom.getInternalVMContext()) };
 }
@@ -49,6 +49,7 @@ for (const page of ['admin', 'inbox']) {
     assert.equal(interval.disabled, true);
     assert.equal(u.w.document.body.classList.contains('is-authenticated'), true);
     assert.equal(u.$(page === 'admin' ? '#admin-tools' : '#mailbox-identity-panel').hidden, false);
+    if (u.$('#refresh-options')) { u.$('#refresh-options').click(); assert.equal(u.$('#refresh-panel').hidden, false); }
     input.checked = true; input.dispatchEvent(new u.w.Event('change'));
     interval.value = '60'; interval.dispatchEvent(new u.w.Event('change'));
     assert.equal(u.timers.size, 1);
@@ -89,6 +90,7 @@ for (const page of ['admin', 'inbox']) {
   test(`${page}: automatic refresh cannot overlap a pending request and stops on session loss`, async t => {
     const u = await ui(t, page), request = deferred();
     const endpoint = page === 'admin' ? '/admin-api/session' : '/mail-api/messages';
+    if (u.$('#refresh-options')) { u.$('#refresh-options').click(); assert.equal(u.$('#refresh-panel').hidden, false); }
     const input = u.$('#auto-refresh'); input.checked = true; input.dispatchEvent(new u.w.Event('change'));
     const tick = [...u.timers.values()][0].callback;
     u.routes.set(endpoint, () => request.promise);

@@ -41,13 +41,19 @@
       <header class="topbar">
         <div class="page-heading"><p class="eyebrow">工作空间 / 邮箱管理</p><h1 id="heading">邮箱总览</h1><p class="muted" id="page-description">查找邮箱、查看来信，再将需要的地址分发出去。</p></div>
         <div id="admin-tools" class="top-actions" hidden>
-          <div class="sync-control">
-            <span class="sync-dot" aria-hidden="true"></span>
-            <div><span class="sync-label" id="auto-refresh-label">自动刷新</span><small id="refresh-state">已关闭 · 手动刷新</small></div>
-            <label class="switch"><input id="auto-refresh" type="checkbox" aria-labelledby="auto-refresh-label"><span aria-hidden="true"></span></label>
-            <select id="refresh-interval" aria-label="自动刷新间隔" disabled><option value="30">30 秒</option><option value="60">1 分钟</option><option value="300">5 分钟</option></select>
+          <button id="refresh" type="button">刷新状态</button>
+          <button id="scan-mail" type="button" class="button-accent">扫描全部收件</button>
+          <button id="refresh-options" type="button" class="button-quiet" aria-label="刷新设置">刷新设置</button>
+          <div id="refresh-panel" class="settings-popover" hidden aria-labelledby="refresh-panel-title">
+            <h2 id="refresh-panel-title" class="popover-title">刷新设置</h2>
+            <p class="muted">只影响当前页面，服务器后台任务不受影响。</p>
+            <div class="sync-control">
+              <span class="sync-dot" aria-hidden="true"></span>
+              <div><span class="sync-label" id="auto-refresh-label">自动刷新</span><small id="refresh-state">已关闭 · 手动刷新</small></div>
+              <label class="switch"><input id="auto-refresh" type="checkbox" aria-labelledby="auto-refresh-label"><span aria-hidden="true"></span></label>
+              <select id="refresh-interval" aria-label="自动刷新间隔" disabled><option value="30">30 秒</option><option value="60">1 分钟</option><option value="300">5 分钟</option></select>
+            </div>
           </div>
-          <div class="header-buttons"><button id="refresh" type="button">刷新状态</button><button id="scan-mail" type="button" class="button-accent">扫描全部收件</button></div>
         </div>
       </header>
       <p id="notice" role="status" aria-live="polite"></p>

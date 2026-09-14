@@ -29,7 +29,7 @@ body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--page); 
 [hidden] { display: none !important; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button, a, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
-button { min-height: 40px; padding: 8px 16px; border: 1px solid var(--control-line); border-radius: 8px; background: var(--surface); cursor: pointer; font-weight: 600; line-height: 1.4; white-space: nowrap; transition: background-color 160ms, border-color 160ms, color 160ms; touch-action: manipulation; }
+button { width: auto; flex: 0 0 auto; min-height: 40px; padding: 8px 12px; border: 1px solid var(--control-line); border-radius: 8px; background: var(--surface); cursor: pointer; font-weight: 600; line-height: 1.4; white-space: nowrap; transition: background-color 160ms, border-color 160ms, color 160ms; touch-action: manipulation; }
 button:active:not(:disabled) { background: var(--accent-soft); }
 button:disabled { color: #7a8891; background: #edf1f3; border-color: var(--line); cursor: not-allowed; }
 button.primary, .button-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -85,13 +85,12 @@ svg { display: block; width: 24px; height: 24px; stroke: currentColor; stroke-wi
 .security-badge small { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
 .status-led { width: 7px; height: 7px; flex: 0 0 7px; margin-top: 7px; border-radius: 50%; background: var(--accent); }
 .side-foot > p { padding: 0 10px; color: var(--muted); font-size: 11px; }
-.sidebar .quiet { text-align: left; width: 100%; }
+.sidebar .quiet { text-align: left; width: auto; }
 .shell main { min-width: 0; padding: 32px clamp(20px, 2.5vw, 40px) 48px; }
 .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
 .page-heading { min-width: 0; flex: 1; }
 .page-heading .muted { margin-top: 8px; margin-bottom: 0; max-width: 460px; }
-.top-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; max-width: 510px; }
-.header-buttons { display: flex; gap: 8px; }
+.top-actions { display: inline-flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 8px; width: max-content; max-width: 100%; }
 .sync-control { display: flex; align-items: center; flex-wrap: nowrap; gap: 10px; min-height: 44px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .sync-control > div { min-width: 108px; }
 .sync-label { display: block; font-size: 12px; font-weight: 600; white-space: nowrap; }
@@ -121,7 +120,7 @@ svg { display: block; width: 24px; height: 24px; stroke: currentColor; stroke-wi
 .filter-fields { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: minmax(150px, 1fr) minmax(210px, 2fr) minmax(130px, 1fr); gap: 12px; background: var(--surface); border: 1px solid var(--line); padding: 16px; border-radius: 10px; }
 .filter-fields label { margin: 0; min-width: 0; }
 .filter-fields:has(.search-field[hidden]) { grid-template-columns: minmax(180px, 320px); border: 0; padding: 0; background: transparent; }
-.toolbar-buttons { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 8px; }
+.toolbar-buttons { grid-column: 2; grid-row: 1; display: inline-flex; width: max-content; max-width: 100%; flex-wrap: nowrap; align-items: center; gap: 8px; }
 .search-field { min-width: 0; }
 .table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; border-radius: 10px; background: var(--surface); }
 table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -136,10 +135,10 @@ td .actions { flex-wrap: nowrap; }
 .email-line { display: flex; gap: 12px; align-items: center; }
 .email-line strong { font: 600 14px/1.6 var(--font); color: var(--ink); white-space: nowrap; }
 .copy-button { flex-shrink: 0; min-width: 62px; min-height: 36px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--surface); border-color: #b8d9d3; }
-.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.actions { display: inline-flex; gap: 8px; align-items: center; flex-wrap: nowrap; width: max-content; max-width: 100%; }
 .actions button { min-height: 36px; padding: 7px 12px; font-size: 12px; }
-/* Flat rows keep their baselines; intrinsic tracks avoid oversized short actions. */
-td > .actions.row-actions { display: grid; grid-template-columns: repeat(2, max-content); gap: 8px; align-items: stretch; justify-items: start; width: max-content; min-width: 0; }
+/* Keep the task surface to one short row; secondary commands live in a menu. */
+td > .actions.row-actions { display: inline-flex; flex-wrap: nowrap; gap: 8px; align-items: center; width: max-content; min-width: 0; }
 td > .row-actions > button { width: auto; min-width: 0; margin: 0; padding-inline: 10px; }
 .key-actions { margin: 16px 0; }
 .key-actions button { min-height: 40px; }
@@ -157,8 +156,8 @@ td > .row-actions > button { width: auto; min-width: 0; margin: 0; padding-inlin
 .account > p { font-size: 13px; overflow-wrap: anywhere; margin: 10px 0; }
 .account > .badge { margin: 8px 0 12px; }
 .account > button { margin: 8px 0; }
-.account .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); gap: 10px; }
-.account .actions button { width: 100%; white-space: normal; min-height: 40px; }
+.account .actions { display: inline-flex; flex-wrap: nowrap; width: max-content; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); gap: 8px; }
+.account .actions > button, .account .actions > .action-menu > button { width: auto; white-space: nowrap; min-height: 40px; padding-inline: 10px; }
 .empty { padding: 40px 24px; background: var(--surface); color: var(--muted); text-align: center; line-height: 1.8; font-size: 14px; }
 #notice { padding: 12px 16px; color: #225e58; background: #e9f5f1; border: 1px solid #bbdcd2; border-radius: 8px; margin: 0 0 20px; font-size: 13px; overflow-wrap: anywhere; }
 #notice:empty, #dialog-error:empty { display: none; }
@@ -177,7 +176,7 @@ td > .row-actions > button { width: auto; min-width: 0; margin: 0; padding-inlin
 .login { padding: 32px; background: var(--surface); box-shadow: var(--shadow); }
 .login h2 { font-size: 24px; margin-bottom: 8px; }
 .login form { margin-top: 28px; }
-.login button[type="submit"] { width: 100%; min-height: 44px; }
+.login button[type="submit"] { width: auto; min-height: 44px; }
 .form-footnote { margin: 20px 0 0; font-size: 12px; color: var(--muted); }
 
 /* Reading view: mailbox address first, with stable wrapping and a real copy target. */
@@ -191,7 +190,7 @@ td > .row-actions > button { width: auto; min-width: 0; margin: 0; padding-inlin
 .inbox-login { max-width: 480px; padding: 32px; margin: 8px auto 48px; box-shadow: var(--shadow); }
 .inbox-login h2 { font-size: 22px; margin-bottom: 8px; }
 .inbox-login .muted { margin-bottom: 24px; }
-.inbox-login button[type="submit"] { width: 100%; min-height: 44px; }
+.inbox-login button[type="submit"] { width: auto; min-height: 44px; }
 .privacy-note { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.8; }
 .mailbox-panel { display: flex; align-items: center; gap: 20px; padding: 24px; border: 1px solid #b8d9d3; border-radius: 12px; background: var(--surface); margin-bottom: 24px; box-shadow: 0 2px 8px #086f6908; }
 .identity-icon { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
@@ -200,11 +199,11 @@ td > .row-actions > button { width: auto; min-width: 0; margin: 0; padding-inlin
 .mailbox-identity { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-width: 0; }
 .mailbox-identity strong { font: 600 24px/1.5 var(--font); min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
 .mailbox-identity .copy-button { min-height: 40px; padding: 8px 14px; font-size: 13px; }
-.mail-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+.mail-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-bottom: 16px; }
 .mail-toolbar-title { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .mail-toolbar-title h2 { font-size: 18px; }
 #mailbox-hint { flex-basis: 100%; font-size: 12px; }
-.mail-actions { display: flex; align-items: center; gap: 12px; }
+.mail-actions { display: inline-flex; width: max-content; max-width: 100%; align-items: center; flex-wrap: nowrap; gap: 8px; }
 .compact { padding: 4px 8px; }
 .message { padding: 20px 24px; margin-bottom: 12px; }
 .message summary { display: flex; align-items: center; gap: 16px; justify-content: space-between; cursor: pointer; list-style: none; min-height: 40px; }
@@ -228,8 +227,8 @@ dialog::backdrop { background: #273c4b33; }
 .close-button { display: grid; place-items: center; padding: 4px; width: 40px; height: 40px; font-size: 24px; font-weight: 400; flex-shrink: 0; border-color: transparent; background: var(--surface-soft); }
 #dialog-body > .muted { margin: 0 0 20px; line-height: 1.8; }
 #dialog-body textarea { width: 100%; }
-.dialog-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
-.dialog-footer button { min-width: 88px; }
+.dialog-footer { display: flex; flex-wrap: nowrap; justify-content: flex-end; gap: 8px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.dialog-footer button { width: auto; min-width: 0; padding-inline: 16px; }
 .busy-layer { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; background: #f4f7f9b8; cursor: progress; }
 .busy-card { display: flex; align-items: center; gap: 12px; padding: 18px 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); font-size: 14px; color: var(--ink); }
 .busy-spinner { display: block; width: 18px; height: 18px; border: 2px solid #c7dfda; border-top-color: var(--accent); border-radius: 50%; animation: spin 850ms linear infinite; }
@@ -248,7 +247,7 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
 @media (max-width: 1180px) {
   .shell { grid-template-columns: 196px minmax(0, 1fr); }
   .topbar { flex-direction: column; gap: 16px; }
-  .top-actions { width: 100%; max-width: none; justify-content: space-between; }
+  .top-actions { width: max-content; max-width: 100%; justify-content: flex-start; }
   .auth-layout { gap: 28px; grid-template-columns: minmax(0, 1fr) minmax(280px, 370px); }
   .auth-intro h1 { font-size: 30px; }
   .stat { padding: 16px; }
@@ -285,17 +284,14 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
   .shell main { padding: 24px 16px 32px; }
   .topbar { padding-bottom: 20px; margin-bottom: 20px; }
   h1 { font-size: 24px; }
-  .top-actions { align-items: stretch; gap: 12px; }
-  .top-actions .sync-control { width: 100%; }
+  .top-actions { align-items: center; gap: 8px; }
   .sync-control > div { flex: 1; min-width: 0; }
   .sync-control select { min-width: 72px; width: 82px; font-size: 12px; }
-  .header-buttons { width: 100%; }
-  .header-buttons button { flex: 1; }
   .stat strong { font-size: 24px; }
   .toolbar-main { grid-template-columns: 1fr; gap: 12px; }
   .toolbar-title { grid-column: 1; grid-row: 1; }
   .toolbar-buttons { grid-column: 1; grid-row: 3; }
-  .toolbar-buttons button { flex: 1; font-size: 13px; padding: 8px 12px; }
+  .toolbar-buttons button { flex: 0 0 auto; font-size: 13px; padding: 8px 12px; }
   .filter-fields { grid-row: 2; padding: 12px; gap: 12px; }
   th, td { padding: 12px; }
   .account { padding: 20px; }
@@ -317,9 +313,9 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
   .mailbox-identity { align-items: flex-start; gap: 12px; }
   .mailbox-identity strong { font-size: 22px; width: 100%; }
   .mailbox-identity .copy-button { min-height: 44px; }
-  .mail-actions { width: 100%; flex-wrap: wrap; gap: 10px; }
-  .mail-actions .compact { flex: 1; justify-content: space-between; padding: 4px 8px; gap: 6px; }
-  .mail-actions > button { width: 100%; }
+  .mail-toolbar { align-items: start; }
+  .mail-actions { width: max-content; flex-wrap: nowrap; gap: 8px; }
+  .mail-actions > button { width: auto; font-size: 13px; padding-inline: 10px; }
   .message { padding: 12px 16px; }
   .message summary { flex-wrap: wrap; gap: 4px 10px; }
   .message summary strong { flex-basis: calc(100% - 28px); order: 0; }
@@ -327,7 +323,7 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
   .message summary span { flex-basis: 100%; order: 2; white-space: normal; }
   .message pre { font-size: 14px; }
   dialog { padding: 20px; max-height: calc(100dvh - 32px); }
-  .dialog-footer button { flex: 1; }
+  .dialog-footer button { flex: 0 0 auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
@@ -339,7 +335,7 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
 .share-email { display: block; font-size: 18px; overflow-wrap: anywhere; }
 .share-expiry { margin: 6px 0 20px; font-size: 13px; color: var(--accent); }
 .share-result textarea { font: 13px/1.7 var(--mono); overflow-wrap: anywhere; resize: vertical; min-height: 92px; background: var(--surface); }
-.share-result > .copy-button { min-height: 44px; padding-inline: 20px; }
+.share-result > .copy-button { min-height: 44px; padding-inline: 12px; }
 .share-compatibility { margin-top: 20px; color: var(--muted); font-size: 12px; }
 .share-compatibility summary { cursor: pointer; padding-block: 8px; }
 .share-token { margin-top: 8px; font-family: var(--mono); }
@@ -347,4 +343,25 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
 .grant-state small { font-size: 12px; line-height: 1.5; }
 .badge.grant-expired, .badge.grant-revoked { color: var(--danger); background: var(--danger-soft); }
 #grant-expiry { white-space: normal; line-height: 1.6; }
-@media (max-width: 640px) { .share-result { padding: 16px; } .share-result > .copy-button { width: 100%; } }
+@media (max-width: 640px) { .share-result { padding: 16px; } }
+
+/* Native top-layer menus keep secondary actions out of dense cards and tables. */
+.action-menu { display: inline-flex; flex: 0 0 auto; align-items: center; width: max-content; }
+.menu-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto; }
+.menu-trigger::after { content: ""; width: 5px; height: 5px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+.action-popover, .settings-popover { position: fixed; inset: auto; margin: 0; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 28px #243d4826; z-index: 200; }
+.action-popover { width: max-content; min-width: 168px; padding: 6px; }
+.action-popover > button { display: block; width: 100%; min-height: 36px; margin: 0; text-align: left; padding: 8px 12px; border: 0; background: transparent; font-size: 13px; font-weight: 400; border-radius: 6px; }
+.action-popover > button + button { margin-top: 2px; }
+.action-popover > button.danger { color: var(--danger); }
+.settings-popover { width: 318px; padding: 16px; }
+.popover-title { font-size: 16px; margin-bottom: 8px; }
+.settings-popover > .muted { font-size: 12px; margin-bottom: 12px; line-height: 1.7; }
+.settings-popover .sync-control { padding: 0; border: 0; gap: 6px; justify-content: space-between; }
+.settings-popover .sync-control > div { min-width: 90px; flex: 1; }
+.settings-popover .sync-control select { min-width: 70px; }
+@media (max-width: 640px), (pointer: coarse) {
+  button, .actions button, .copy-button, .action-popover > button, .account .actions > button, .account .actions > .action-menu > button { min-height: 44px; }
+  .action-popover > button { min-width: 44px; }
+  .settings-popover .sync-control select { min-height: 44px; }
+}

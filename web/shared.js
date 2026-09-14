@@ -1,9 +1,93 @@
 export const $ = selector => document.querySelector(selector);
 export function element(tag, text, className) { const e = document.createElement(tag); if (text !== undefined) e.textContent = String(text); if (className) e.className = className; return e; }
-let pendingState;
+let pendingState, activePopup, popupId = 0;
+const popupBindings = new WeakMap();
+export function closePopups({ restoreFocus = false } = {}) { activePopup?.close({ restoreFocus }); }
+export function bindPopup(trigger, panel, { menu = false } = {}) {
+  if (popupBindings.has(trigger)) return popupBindings.get(trigger);
+  let opened = false, native = false, originalParent, originalNext;
+  trigger.type = 'button';
+  trigger.id ||= `popup-trigger-${++popupId}`;
+  panel.id ||= `popup-panel-${++popupId}`;
+  panel.hidden = true; panel.tabIndex = -1;
+  // Keep the native top-layer contract on capable browsers; fallback browsers simply ignore this attribute.
+  if (typeof panel.showPopover === 'function' && typeof panel.hidePopover === 'function') panel.setAttribute('popover', 'auto');
+  trigger.setAttribute('aria-expanded', 'false'); trigger.setAttribute('aria-controls', panel.id); trigger.setAttribute('aria-haspopup', menu ? 'menu' : 'dialog');
+  panel.setAttribute('role', menu ? 'menu' : 'dialog'); if (!panel.getAttribute('aria-labelledby')) panel.setAttribute('aria-labelledby', trigger.id);
+  if (menu) for (const button of panel.querySelectorAll('button')) { button.type = 'button'; button.setAttribute('role', 'menuitem'); button.tabIndex = -1; }
+  const items = () => [...panel.querySelectorAll(menu ? 'button:not(:disabled)' : 'input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled), a[href]')].filter(node => !node.closest('[hidden]'));
+  function position() {
+    if (!trigger.isConnected || !panel.isConnected) { close({ restoreFocus: false }); return; }
+    const anchor = trigger.getBoundingClientRect(), box = panel.getBoundingClientRect(), padding = 8, gap = 6;
+    const width = document.documentElement.clientWidth || window.innerWidth, height = document.documentElement.clientHeight || window.innerHeight;
+    const left = Math.max(padding, Math.min(anchor.right - box.width, width - box.width - padding));
+    const below = anchor.bottom + gap, top = Math.max(padding, Math.min(below + box.height > height - padding ? anchor.top - box.height - gap : below, height - box.height - padding));
+    panel.style.left = `${Math.round(left)}px`; panel.style.top = `${Math.round(top)}px`;
+  }
+  function outside(event) { if (!panel.contains(event.target) && !trigger.contains(event.target)) close({ restoreFocus: false }); }
+  function scroll(event) { if (!(event.target instanceof Node) || !panel.contains(event.target)) close({ restoreFocus: false }); }
+  function keydown(event) {
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
+    if (!menu) return;
+    if (event.key === 'Tab') { close(); return; }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const buttons = items(), index = buttons.indexOf(document.activeElement);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+    buttons[next]?.focus({ preventScroll: true });
+  }
+  function listen(add) {
+    const method = add ? 'addEventListener' : 'removeEventListener';
+    document[method]('click', outside, true); document[method]('focusin', outside, true); document[method]('keydown', keydown, true);
+    window[method]('scroll', scroll, true); window[method]('resize', position);
+  }
+  function close({ restoreFocus = true, nativeHidden = false } = {}) {
+    if (!opened) return;
+    opened = false; listen(false); if (activePopup === controller) activePopup = null;
+    if (native && !nativeHidden) { try { panel.hidePopover(); } catch {} }
+    panel.hidden = true; trigger.setAttribute('aria-expanded', 'false');
+    if (originalParent?.isConnected && trigger.isConnected) originalParent.insertBefore(panel, originalNext?.parentNode === originalParent ? originalNext : null);
+    else if (!trigger.isConnected) panel.remove();
+    originalParent = null; originalNext = null;
+    const dialog = $('dialog[open]');
+    if (restoreFocus && trigger.isConnected && !trigger.disabled && !trigger.closest('[hidden], [inert]') && (!dialog || dialog.contains(trigger))) trigger.focus({ preventScroll: true });
+  }
+  function open({ focusLast = false } = {}) {
+    const dialog = $('dialog[open]');
+    if (pendingState || document.body.classList.contains('is-busy') || trigger.disabled || !trigger.isConnected || trigger.closest('[hidden], [inert]') || (dialog && !dialog.contains(trigger))) return;
+    if (!opened) {
+      closePopups(); opened = true; activePopup = controller; panel.hidden = false;
+      native = typeof panel.showPopover === 'function' && typeof panel.hidePopover === 'function';
+      if (native) {
+        try { panel.showPopover(); } catch { native = false; panel.removeAttribute('popover'); }
+      }
+      if (!native) { originalParent = panel.parentNode; originalNext = panel.nextSibling; (dialog || document.body).append(panel); }
+      trigger.setAttribute('aria-expanded', 'true'); position(); listen(true);
+    }
+    const buttons = items(); (buttons[focusLast ? buttons.length - 1 : 0] || panel).focus({ preventScroll: true });
+  }
+  const controller = { open, close }; popupBindings.set(trigger, controller);
+  trigger.addEventListener('click', () => opened ? close() : open());
+  trigger.addEventListener('keydown', event => {
+    if (menu && !opened && ['ArrowDown', 'ArrowUp'].includes(event.key)) { event.preventDefault(); open({ focusLast: event.key === 'ArrowUp' }); }
+  });
+  // Close before the prewired action runs, so a new modal remembers the visible trigger as its return focus.
+  if (menu) panel.addEventListener('click', event => { const button = event.target.closest('button'); if (button && panel.contains(button) && !button.disabled) close(); }, true);
+  panel.addEventListener('toggle', event => {
+    let stillOpen = false; try { stillOpen = panel.matches(':popover-open'); } catch {}
+    if (opened && native && event.newState === 'closed' && !stillOpen) close({ restoreFocus: panel.contains(document.activeElement), nativeHidden: true });
+  });
+  return controller;
+}
+export function actionMenu(label, buttons, ariaLabel = label) {
+  const wrapper = element('div', undefined, 'action-menu'), trigger = element('button', label, 'menu-trigger'), panel = element('div', undefined, 'action-popover');
+  trigger.setAttribute('aria-label', ariaLabel); panel.append(...buttons); wrapper.append(trigger, panel); bindPopup(trigger, panel, { menu: true });
+  return wrapper;
+}
 export function setPagePending(value) {
   const layer = $('#busy-layer'), dialog = $('dialog[open]');
   if (value) {
+    closePopups({ restoreFocus: true });
     pendingState ||= { controls: new Map(), regions: new Map(), focus: document.activeElement, layerParent: layer?.parentNode, layerNext: layer?.nextSibling };
     for (const control of document.querySelectorAll('button, input, select, textarea')) {
       if (!pendingState.controls.has(control)) pendingState.controls.set(control, control.disabled);

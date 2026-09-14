@@ -57,7 +57,7 @@ async function ui(t, page = 'inbox', { hash = '', routes = new Map(), seedOld = 
   return {
     w, $, routes, calls, events, accounts, clipboard, timeouts, intervals, errors,
     evaluate: source => vm.runInContext(source, context),
-    click: text => { const button = [...w.document.querySelectorAll('button')].find(b => b.textContent === text); assert.ok(button, `button ${text} exists`); button.click(); },
+    click: text => { const button = [...w.document.querySelectorAll('button')].find(b => b.textContent === text && !b.closest('[hidden]')); assert.ok(button, `visible button ${text} exists`); button.click(); },
     submit: () => $('#dialog-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })),
     advance: milliseconds => { now += milliseconds; },
     change: (selector, value) => { $(selector).value = value; $(selector).dispatchEvent(new w.Event('change', { bubbles: true })); }
@@ -295,7 +295,7 @@ test('admin: explicit renewal changes only original grant expiry and never reset
 
 test('admin: replacing a link warns that old links and sessions stop, and retains the exact server expiry', async t => {
   const u = await ui(t, 'admin', { routes: new Map([['/admin-api/grants/grant-a/reset', response({ ...grant, token, shareUrl: link, inboxUrl: 'https://example.test/inbox' })]]) });
-  u.click('分享管理'); await settle(); u.click('重新生成链接');
+  u.click('分享管理'); await settle(); u.click('更多'); u.click('重新生成链接');
   assert.match(u.$('#dialog-body').textContent, /旧链接、旧 Token 与旧会话立即失效/);
   assert.match(u.$('#dialog-body').textContent, /不会延长有效期/);
   u.submit(); await settle();
