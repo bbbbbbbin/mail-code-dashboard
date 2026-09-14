@@ -8,6 +8,22 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 15));
 const statuses = ['unassigned', 'active', 'expired', 'revoked'];
 const grantLabels = status => ['重新生成链接', '调整有效期', ...(status === 'revoked' ? [] : ['撤销'])];
 
+test('row action sizing follows content while keeping alignment and touch spacing', async () => {
+  const css = await readFile(new URL('../web/site.css', import.meta.url), 'utf8');
+  const grid = css.match(/td > \.actions\.row-actions\s*\{([^}]+)\}/)?.[1] || '';
+  const button = css.match(/td > \.row-actions > button\s*\{([^}]+)\}/)?.[1] || '';
+  assert.match(grid, /grid-template-columns:\s*repeat\(2,\s*max-content\)/);
+  assert.match(grid, /gap:\s*8px/);
+  assert.match(grid, /justify-items:\s*start/);
+  assert.match(grid, /width:\s*max-content/);
+  assert.doesNotMatch(grid, /(?:min-)?width:\s*224px/);
+  assert.match(button, /width:\s*auto/);
+  assert.match(button, /padding-inline:\s*10px/);
+  assert.doesNotMatch(button, /width:\s*100%/);
+  assert.match(css, /\.actions button\s*\{[^}]*min-height:\s*36px/);
+  assert.match(css, /@media\s*\(max-width:\s*640px\)\s*\{\s*button,\s*\.actions button[^}]+min-height:\s*44px/);
+});
+
 async function ui(t) {
   const dom = new JSDOM(await readFile(new URL('../web/admin.html', import.meta.url), 'utf8'), {
     url: 'https://admin.example.test/admin', runScripts: 'outside-only',

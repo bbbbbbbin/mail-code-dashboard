@@ -138,9 +138,9 @@ td .actions { flex-wrap: nowrap; }
 .copy-button { flex-shrink: 0; min-width: 62px; min-height: 36px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--surface); border-color: #b8d9d3; }
 .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .actions button { min-height: 36px; padding: 7px 12px; font-size: 12px; }
-/* One flat grid keeps reading and share actions on the same baselines. */
-td > .actions.row-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: stretch; width: 224px; min-width: 224px; }
-td > .row-actions > button { width: 100%; min-width: 0; margin: 0; padding-inline: 8px; }
+/* Flat rows keep their baselines; intrinsic tracks avoid oversized short actions. */
+td > .actions.row-actions { display: grid; grid-template-columns: repeat(2, max-content); gap: 8px; align-items: stretch; justify-items: start; width: max-content; min-width: 0; }
+td > .row-actions > button { width: auto; min-width: 0; margin: 0; padding-inline: 10px; }
 .key-actions { margin: 16px 0; }
 .key-actions button { min-height: 40px; }
 #content > .table-wrap + button { margin-top: 20px; }
