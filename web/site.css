@@ -138,6 +138,9 @@ td .actions { flex-wrap: nowrap; }
 .copy-button { flex-shrink: 0; min-width: 62px; min-height: 36px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--surface); border-color: #b8d9d3; }
 .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .actions button { min-height: 36px; padding: 7px 12px; font-size: 12px; }
+/* One flat grid keeps reading and share actions on the same baselines. */
+td > .actions.row-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: stretch; width: 224px; min-width: 224px; }
+td > .row-actions > button { width: 100%; min-width: 0; margin: 0; padding-inline: 8px; }
 .key-actions { margin: 16px 0; }
 .key-actions button { min-height: 40px; }
 #content > .table-wrap + button { margin-top: 20px; }
@@ -341,7 +344,6 @@ dialog.is-pending > .busy-layer { position: fixed; border-radius: 0; }
 .share-compatibility summary { cursor: pointer; padding-block: 8px; }
 .share-token { margin-top: 8px; font-family: var(--mono); }
 .grant-state { display: grid; justify-items: start; gap: 6px; }
-td .grant-actions { flex-wrap: wrap; flex: 0 0 208px; width: 208px; max-width: 208px; }
 .grant-state small { font-size: 12px; line-height: 1.5; }
 .badge.grant-expired, .badge.grant-revoked { color: var(--danger); background: var(--danger-soft); }
 #grant-expiry { white-space: normal; line-height: 1.6; }

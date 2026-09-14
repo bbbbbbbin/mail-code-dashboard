@@ -118,13 +118,14 @@ function saveRefreshSettings() {
 }
 function table(headers, rows) { const wrap = el('div', undefined, 'table-wrap card'), t = el('table'), head = el('thead'), hr = el('tr'); headers.forEach(h => hr.append(el('th', h))); head.append(hr); t.append(head); const body = el('tbody'); rows.forEach(cells => { const row = el('tr'); cells.forEach(v => { const cell = el('td'); cell.append(v instanceof Node ? v : document.createTextNode(String(v ?? ''))); row.append(cell); }); body.append(row); }); t.append(body); wrap.append(t); if (!rows.length) wrap.append(el('p', '暂无记录', 'empty')); return wrap; }
 function actions(...items) { const box = el('div', undefined, 'actions'); box.append(...items); return box; }
-function grantActions(g) {
+function grantActions(g, ...leadingButtons) {
   const box = actions(
+    ...leadingButtons,
     button('重新生成链接', () => openDialog('重新生成原使用者的分享链接', [el('p', `邮箱：${g.email}。旧链接、旧 Token 与旧会话立即失效。原使用者和邮件起始范围保持不变。`, 'warning'), el('p', `${expiryLabel(g)}。此操作不会延长有效期${g.status === 'revoked' ? '，确认后会恢复原使用者的授权' : ''}；到期链接请先调整有效期。`)], async () => { const result = await write(`/admin-api/grants/${g.id}/reset`); return () => shareDialog('新的分享链接 · 请重新发送', [result], result.inboxUrl); })),
     button('调整有效期', () => openDialog('调整原分享的有效期', [el('p', `邮箱：${g.email} · ${expiryLabel(g)}`), el('p', '新的有效期从本次确认起计算，原链接与使用者不变；已打开的会话需重新通过原链接进入。已撤销的分享仍保持撤销。', 'muted'), ...durationFields()], b => write(`/admin-api/grants/${g.id}`, { durationDays: durationFromForm(b) }, 'PATCH'))),
     ...(['active', 'expired'].includes(grantStatus(g)) ? [button('撤销', () => openDialog('撤销收件分享', [el('p', `${g.email} 将停止对原链接与 Token 提供收件。邮箱不删除，也不自动重新分发。`)], () => write(`/admin-api/grants/${g.id}/revoke`)))] : [])
   );
-  box.classList.add('grant-actions'); return box;
+  box.classList.add('grant-actions', 'row-actions'); return box;
 }
 async function render() {
   const content = $('#content'); content.replaceChildren();
@@ -149,7 +150,12 @@ async function render() {
       const mailbox = el('div', undefined, 'mailbox-cell'); const emailLine = el('div', undefined, 'email-line'); emailLine.append(el('strong', r.email), copyButton(r.email)); mailbox.append(emailLine, el('small', r.label || '无标签', 'muted'));
       const account = el('span', r.account.name, `badge ${accountTone(r.accountId)}`);
       const state = el('div', undefined, 'grant-state'); state.append(el('span', stateName(r.distribution), `badge grant-${grantStatus(r.distribution)}`)); if (r.distribution.status !== 'unassigned') state.append(el('small', expiryLabel(r.distribution), 'muted'));
-      return [input, mailbox, account, state, r.distribution.recipient || '—', r.unread ? '未读' : r.receivedAt ? date(r.receivedAt) : '—', actions(button('查看邮件', async () => { const data = await api(`/admin-api/accounts/${r.accountId}/emails/${r.id}/messages`); const box = el('div'); displayMail(data.messages, box); openDialog(r.email, [box]); }), ...(r.distribution.status === 'unassigned' ? [button('分享', () => distribute([r]))] : [grantActions({ ...r.distribution, email: r.email })]))];
+      const readMail = button('查看邮件', async () => { const data = await api(`/admin-api/accounts/${r.accountId}/emails/${r.id}/messages`); const box = el('div'); displayMail(data.messages, box); openDialog(r.email, [box]); });
+      const controls = r.distribution.status === 'unassigned'
+        ? actions(readMail, button('分享', () => distribute([r])))
+        : grantActions({ ...r.distribution, email: r.email }, readMail);
+      controls.classList.add('row-actions');
+      return [input, mailbox, account, state, r.distribution.recipient || '—', r.unread ? '未读' : r.receivedAt ? date(r.receivedAt) : '—', controls];
     })));
   } else if (view === 'accounts') {
     const grid = el('div', undefined, 'account-grid');
